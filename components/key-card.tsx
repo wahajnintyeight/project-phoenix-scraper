@@ -16,6 +16,8 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
+  Shield,
+  Zap,
 } from "lucide-react";
 
 interface KeyCardProps {
@@ -27,39 +29,43 @@ const statusConfig = {
   Valid: {
     icon: CheckCircle2,
     label: "Valid",
-    className: "bg-valid/10 text-valid border-valid/20",
-    dotClassName: "bg-valid",
+    className: "bg-lime-500/15 text-lime-600 dark:text-lime-400 border-lime-500/30",
+    dotClassName: "bg-lime-500",
+    accentColor: "border-l-lime-500",
   },
   Invalid: {
     icon: XCircle,
     label: "Invalid",
-    className: "bg-invalid/10 text-invalid border-invalid/20",
-    dotClassName: "bg-invalid",
+    className: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
+    dotClassName: "bg-red-500",
+    accentColor: "border-l-red-500",
   },
   Pending: {
     icon: Loader2,
     label: "Pending",
-    className: "bg-pending/10 text-pending border-pending/20",
-    dotClassName: "bg-pending",
+    className: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border-yellow-500/30",
+    dotClassName: "bg-yellow-500",
+    accentColor: "border-l-yellow-500",
   },
   Error: {
     icon: AlertCircle,
     label: "Error",
-    className: "bg-error/10 text-error border-error/20",
-    dotClassName: "bg-error",
+    className: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30",
+    dotClassName: "bg-orange-500",
+    accentColor: "border-l-orange-500",
   },
 };
 
-const providerColors: Record<string, string> = {
-  openai: "from-emerald-500 to-teal-600",
-  anthropic: "from-orange-500 to-amber-600",
-  google: "from-blue-500 to-cyan-600",
-  openrouter: "from-fuchsia-500 to-pink-600",
-  github: "from-slate-600 to-slate-800",
-  stripe: "from-violet-500 to-purple-600",
-  aws: "from-amber-500 to-orange-600",
-  azure: "from-sky-500 to-blue-600",
-  default: "from-primary to-primary/80",
+const providerConfig: Record<string, { bg: string; icon: string; accent: string }> = {
+  openai: { bg: "bg-lime-500/10", icon: "text-lime-600 dark:text-lime-400", accent: "border-l-lime-500" },
+  anthropic: { bg: "bg-yellow-500/10", icon: "text-yellow-600 dark:text-yellow-400", accent: "border-l-yellow-500" },
+  google: { bg: "bg-blue-500/10", icon: "text-blue-600 dark:text-blue-400", accent: "border-l-blue-500" },
+  openrouter: { bg: "bg-purple-500/10", icon: "text-purple-600 dark:text-purple-400", accent: "border-l-purple-500" },
+  github: { bg: "bg-zinc-500/10", icon: "text-zinc-700 dark:text-zinc-300", accent: "border-l-zinc-500" },
+  stripe: { bg: "bg-indigo-500/10", icon: "text-indigo-600 dark:text-indigo-400", accent: "border-l-indigo-500" },
+  aws: { bg: "bg-amber-500/10", icon: "text-amber-600 dark:text-amber-400", accent: "border-l-amber-500" },
+  azure: { bg: "bg-sky-500/10", icon: "text-sky-600 dark:text-sky-400", accent: "border-l-sky-500" },
+  default: { bg: "bg-zinc-500/10", icon: "text-zinc-600 dark:text-zinc-400", accent: "border-l-zinc-500" },
 };
 
 export function KeyCard({ keyData, index }: KeyCardProps) {
@@ -69,7 +75,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
 
   const status = statusConfig[keyData.status] || statusConfig.Error;
   const StatusIcon = status.icon;
-  const gradientClass = providerColors[keyData.provider.toLowerCase()] || providerColors.default;
+  const provider = providerConfig[keyData.provider.toLowerCase()] || providerConfig.default;
 
   const maskedKey = keyData.key_value.slice(0, 8) + "..." + keyData.key_value.slice(-4);
 
@@ -115,32 +121,37 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.3 }}
+      transition={{ 
+        delay: index * 0.04, 
+        duration: 0.4,
+        ease: [0.23, 1, 0.32, 1]
+      }}
       layout
     >
       <motion.div
         className={cn(
-          "group relative overflow-hidden rounded-2xl border bg-card transition-all duration-300",
-          "hover:shadow-lg hover:shadow-primary/5",
-          isExpanded && "ring-2 ring-primary/20"
+          "group relative overflow-hidden rounded-xl border-2 bg-card transition-all duration-200",
+          "hover:border-foreground/20",
+          isExpanded && "border-foreground/30 shadow-xl",
+          status.accentColor
         )}
-        whileHover={{ scale: 1.01 }}
+        whileHover={{ y: -2 }}
         whileTap={{ scale: 0.995 }}
       >
-        {/* Gradient accent bar */}
-        <div className={cn("absolute left-0 top-0 h-full w-1 bg-gradient-to-b", gradientClass)} />
-
         {/* Main content */}
-        <div className="flex w-full items-center gap-4 p-4 pl-5">
+        <div className="flex w-full items-center gap-3 p-4">
           {/* Provider icon - clickable to expand */}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md transition-transform hover:scale-105",
-              gradientClass
+              "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 transition-all duration-200",
+              provider.bg,
+              provider.icon,
+              "hover:scale-105 active:scale-95",
+              "border-current/20"
             )}
           >
-            <Key className="h-5 w-5" />
+            <Shield className="h-6 w-6" />
           </button>
 
           {/* Key info - clickable to expand */}
@@ -148,13 +159,13 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
             onClick={() => setIsExpanded(!isExpanded)}
             className="min-w-0 flex-1 text-left"
           >
-            <div className="flex items-center gap-2">
-              <span className="font-semibold capitalize text-foreground">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-bold capitalize text-foreground tracking-tight">
                 {keyData.provider}
               </span>
               <span
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                  "inline-flex items-center gap-1.5 rounded-md border-2 px-2 py-0.5 text-xs font-bold uppercase tracking-wide",
                   status.className
                 )}
               >
@@ -162,7 +173,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                 {status.label}
               </span>
             </div>
-            <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
+            <p className="truncate font-mono text-xs text-muted-foreground tracking-tight">
               {maskedKey}
             </p>
           </button>
@@ -172,20 +183,22 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
             <motion.button
               onClick={handleCopy}
               className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
-                "bg-secondary hover:bg-secondary/80",
-                isCopied && "bg-valid/20 text-valid"
+                "flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all duration-200",
+                "hover:scale-105 active:scale-95",
+                isCopied 
+                  ? "bg-lime-500/20 text-lime-600 dark:text-lime-400 border-lime-500/40" 
+                  : "bg-background border-border hover:border-foreground/30"
               )}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.9 }}
             >
               <AnimatePresence mode="wait">
                 {isCopied ? (
                   <motion.div
                     key="check"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    exit={{ scale: 0, rotate: 180 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <Check className="h-4 w-4" />
                   </motion.div>
@@ -205,8 +218,11 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
             <motion.button
               onClick={() => setIsExpanded(!isExpanded)}
               animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
-              className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-lg border-2 transition-all duration-200",
+                "hover:scale-105 active:scale-95 border-border hover:border-foreground/30"
+              )}
             >
               <ChevronDown className="h-5 w-5" />
             </motion.button>
@@ -220,61 +236,69 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
               className="overflow-hidden"
             >
-              <div className="border-t bg-muted/30 px-5 py-4">
+              <div className="border-t-2 bg-muted/20 px-4 py-4">
                 {/* Full key with reveal toggle */}
                 <div className="mb-4">
-                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                    <Zap className="h-3.5 w-3.5" />
                     Full API Key
                   </label>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCopy}
-                      className="flex-1 rounded-lg border bg-background p-3 text-left font-mono text-sm transition-colors hover:bg-muted/50"
+                      className={cn(
+                        "flex-1 rounded-lg border-2 bg-background p-3 text-left font-mono text-sm transition-all duration-200",
+                        "hover:border-foreground/30 active:scale-[0.99]"
+                      )}
                     >
                       {isRevealed ? keyData.key_value : "•".repeat(Math.min(keyData.key_value.length, 40))}
                     </button>
                     <motion.button
                       onClick={handleReveal}
-                      className="rounded-lg border bg-background px-3 py-3 text-sm font-medium transition-colors hover:bg-muted/50"
-                      whileHover={{ scale: 1.05 }}
+                      className={cn(
+                        "rounded-lg border-2 bg-background px-4 py-3 text-sm font-bold uppercase tracking-wide transition-all duration-200",
+                        "hover:border-foreground/30 hover:scale-105 active:scale-95"
+                      )}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {isRevealed ? "Hide" : "Reveal"}
+                      {isRevealed ? "Hide" : "Show"}
                     </motion.button>
                   </div>
                 </div>
 
                 {/* Metadata */}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Found:</span>
-                    <span className="font-medium">{formatDate(keyData.created_at)}</span>
+                  <div className="flex items-center gap-2 rounded-lg border-2 bg-background p-2.5 text-sm">
+                    <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-muted-foreground font-medium">Found:</span>
+                    <span className="font-bold">{formatDate(keyData.created_at)}</span>
                   </div>
 
                   {keyData.validated_at && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Validated:</span>
-                      <span className="font-medium">{formatDate(keyData.validated_at)}</span>
+                    <div className="flex items-center gap-2 rounded-lg border-2 bg-background p-2.5 text-sm">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-lime-600 dark:text-lime-400" />
+                      <span className="text-muted-foreground font-medium">Validated:</span>
+                      <span className="font-bold">{formatDate(keyData.validated_at)}</span>
                     </div>
                   )}
 
                   {keyData.repo_refs && keyData.repo_refs.length > 0 && (
-                    <div className="flex items-start gap-2 text-sm sm:col-span-2">
-                      <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="text-muted-foreground">Sources:</span>
-                      <span className="font-medium">{keyData.repo_refs.length} reference{keyData.repo_refs.length > 1 ? "s" : ""}</span>
+                    <div className="flex items-center gap-2 rounded-lg border-2 bg-background p-2.5 text-sm sm:col-span-2">
+                      <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="text-muted-foreground font-medium">Sources:</span>
+                      <span className="font-bold">{keyData.repo_refs.length} reference{keyData.repo_refs.length > 1 ? "s" : ""}</span>
                     </div>
                   )}
 
                   {keyData.error_count > 0 && (
-                    <div className="flex items-start gap-2 text-sm sm:col-span-2">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
-                      <span className="text-error">{keyData.error_count} error{keyData.error_count > 1 ? "s" : ""} during validation</span>
+                    <div className="flex items-center gap-2 rounded-lg border-2 border-red-500/30 bg-red-500/10 p-2.5 text-sm sm:col-span-2">
+                      <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
+                      <span className="font-bold text-red-600 dark:text-red-400">
+                        {keyData.error_count} error{keyData.error_count > 1 ? "s" : ""} during validation
+                      </span>
                     </div>
                   )}
                 </div>
