@@ -75,7 +75,7 @@ export default function KeyScannerPage() {
     setIsLoadingStats(true);
     try {
       const res = await fetchStats();
-      if (res.code === 1022) {
+      if (res.code === 1009) {
         setStats(res.result);
       }
     } catch (err) {
@@ -95,7 +95,7 @@ export default function KeyScannerPage() {
         filterProvider || undefined,
         filterStatus || undefined
       );
-      if (res.code === 1022) {
+      if (res.code === 1009) {
         setKeys(res.result.keys);
         setTotalPages(res.result.total_pages);
       }
@@ -325,7 +325,7 @@ export default function KeyScannerPage() {
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {filteredKeys.map((key, index) => (
-                  <KeyCard key={key._id} keyData={key} index={index} />
+                  <KeyCard key={key.id} keyData={key} index={index} />
                 ))}
               </AnimatePresence>
             </div>

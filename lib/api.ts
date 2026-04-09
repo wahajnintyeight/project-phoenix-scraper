@@ -45,15 +45,15 @@ async function authenticatedFetch<T>(
 
 // Types
 export interface ApiKey {
-  _id: string;
+  id: string;
   key_value: string;
   provider: string;
-  status: "valid" | "invalid" | "pending" | "error";
+  status: "Valid" | "Invalid" | "Pending" | "Error";
   created_at: string;
   validated_at?: string;
   last_seen_at?: string;
+  error_count: number;
   repo_refs?: string[];
-  validation_error?: string | null;
 }
 
 export interface KeysResponse {
@@ -81,8 +81,6 @@ export interface Stats {
   pending_keys: number;
   error_keys: number;
   by_provider: Record<string, number>;
-  last_scraped_at: string;
-  last_validated_at: string;
 }
 
 export interface StatsResponse {

@@ -24,25 +24,25 @@ interface KeyCardProps {
 }
 
 const statusConfig = {
-  valid: {
+  Valid: {
     icon: CheckCircle2,
     label: "Valid",
     className: "bg-valid/10 text-valid border-valid/20",
     dotClassName: "bg-valid",
   },
-  invalid: {
+  Invalid: {
     icon: XCircle,
     label: "Invalid",
     className: "bg-invalid/10 text-invalid border-invalid/20",
     dotClassName: "bg-invalid",
   },
-  pending: {
+  Pending: {
     icon: Loader2,
     label: "Pending",
     className: "bg-pending/10 text-pending border-pending/20",
     dotClassName: "bg-pending",
   },
-  error: {
+  Error: {
     icon: AlertCircle,
     label: "Error",
     className: "bg-error/10 text-error border-error/20",
@@ -54,6 +54,7 @@ const providerColors: Record<string, string> = {
   openai: "from-emerald-500 to-teal-600",
   anthropic: "from-orange-500 to-amber-600",
   google: "from-blue-500 to-cyan-600",
+  openrouter: "from-fuchsia-500 to-pink-600",
   github: "from-slate-600 to-slate-800",
   stripe: "from-violet-500 to-purple-600",
   aws: "from-amber-500 to-orange-600",
@@ -66,7 +67,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
-  const status = statusConfig[keyData.status] || statusConfig.error;
+  const status = statusConfig[keyData.status] || statusConfig.Error;
   const StatusIcon = status.icon;
   const gradientClass = providerColors[keyData.provider.toLowerCase()] || providerColors.default;
 
@@ -129,23 +130,24 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
         {/* Gradient accent bar */}
         <div className={cn("absolute left-0 top-0 h-full w-1 bg-gradient-to-b", gradientClass)} />
 
-        {/* Main content - clickable to expand */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex w-full items-center gap-4 p-4 pl-5 text-left"
-        >
-          {/* Provider icon */}
-          <div
+        {/* Main content */}
+        <div className="flex w-full items-center gap-4 p-4 pl-5">
+          {/* Provider icon - clickable to expand */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md transition-transform hover:scale-105",
               gradientClass
             )}
           >
             <Key className="h-5 w-5" />
-          </div>
+          </button>
 
-          {/* Key info */}
-          <div className="min-w-0 flex-1">
+          {/* Key info - clickable to expand */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="min-w-0 flex-1 text-left"
+          >
             <div className="flex items-center gap-2">
               <span className="font-semibold capitalize text-foreground">
                 {keyData.provider}
@@ -156,14 +158,14 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                   status.className
                 )}
               >
-                <StatusIcon className={cn("h-3 w-3", keyData.status === "pending" && "animate-spin")} />
+                <StatusIcon className={cn("h-3 w-3", keyData.status === "Pending" && "animate-spin")} />
                 {status.label}
               </span>
             </div>
             <p className="mt-0.5 truncate font-mono text-sm text-muted-foreground">
               {maskedKey}
             </p>
-          </div>
+          </button>
 
           {/* Actions */}
           <div className="flex items-center gap-2">
@@ -200,15 +202,16 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
               </AnimatePresence>
             </motion.button>
 
-            <motion.div
+            <motion.button
+              onClick={() => setIsExpanded(!isExpanded)}
               animate={{ rotate: isExpanded ? 180 : 0 }}
               transition={{ duration: 0.2 }}
-              className="flex h-9 w-9 items-center justify-center text-muted-foreground"
+              className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
             >
               <ChevronDown className="h-5 w-5" />
-            </motion.div>
+            </motion.button>
           </div>
-        </button>
+        </div>
 
         {/* Expanded content */}
         <AnimatePresence>
@@ -264,14 +267,14 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                     <div className="flex items-start gap-2 text-sm sm:col-span-2">
                       <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="text-muted-foreground">Sources:</span>
-                      <span className="font-medium">{keyData.repo_refs.join(", ")}</span>
+                      <span className="font-medium">{keyData.repo_refs.length} reference{keyData.repo_refs.length > 1 ? "s" : ""}</span>
                     </div>
                   )}
 
-                  {keyData.validation_error && (
+                  {keyData.error_count > 0 && (
                     <div className="flex items-start gap-2 text-sm sm:col-span-2">
-                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-invalid" />
-                      <span className="text-invalid">{keyData.validation_error}</span>
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-error" />
+                      <span className="text-error">{keyData.error_count} error{keyData.error_count > 1 ? "s" : ""} during validation</span>
                     </div>
                   )}
                 </div>
