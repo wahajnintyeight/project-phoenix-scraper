@@ -132,16 +132,16 @@ export default function KeyScannerPage() {
     }
   };
 
-  const getProviderGradient = (provider: string) => {
-    const gradients: Record<string, string> = {
-      openai: "from-emerald-500 to-teal-600",
-      anthropic: "from-orange-500 to-amber-600",
-      google: "from-blue-500 to-cyan-600",
-      openrouter: "from-fuchsia-500 to-pink-600",
-      github: "from-slate-600 to-slate-800",
-      stripe: "from-violet-500 to-purple-600",
+  const getProviderColor = (provider: string) => {
+    const colors: Record<string, string> = {
+      openai: "bg-emerald-500",
+      anthropic: "bg-orange-500",
+      google: "bg-blue-500",
+      openrouter: "bg-fuchsia-500",
+      github: "bg-slate-400",
+      stripe: "bg-violet-500",
     };
-    return gradients[provider.toLowerCase()] || "from-primary to-accent";
+    return colors[provider.toLowerCase()] || "bg-primary";
   };
 
   const getStatusColor = (status: string) => {
@@ -177,16 +177,16 @@ export default function KeyScannerPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-6"
         >
           <motion.div
-            className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-accent shadow-2xl shadow-primary/20"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="flex h-20 w-20 items-center justify-center border-2 border-primary bg-background shadow-[0_0_20px_rgba(var(--color-primary),0.3)]"
+            animate={{ rotate: [0, 90, 180, 270, 360] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
           >
-            <Flame className="h-10 w-10 text-primary-foreground" />
+            <Flame className="h-10 w-10 text-primary" />
           </motion.div>
           <div className="text-center">
             <h2 className="text-xl font-bold">Phoenix</h2>
@@ -230,11 +230,12 @@ export default function KeyScannerPage() {
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="fixed top-4 left-1/2 z-50 hidden -translate-x-1/2 md:block"
       >
-        <div className="flex items-center gap-4 rounded-2xl border bg-background/80 px-6 py-3 shadow-lg backdrop-blur-xl">
+        <div className="flex items-center gap-4 border bg-background/80 px-6 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent">
+            <div className="flex h-10 w-10 items-center justify-center bg-primary">
               <Flame className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
@@ -266,8 +267,8 @@ export default function KeyScannerPage() {
       >
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg">
-              <Flame className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center border-l-4 border-l-primary bg-card shadow-lg">
+              <Flame className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-base font-bold">Phoenix</h1>
@@ -328,119 +329,121 @@ export default function KeyScannerPage() {
       </div>
 
       {/* Desktop Hero Section */}
-      <section className="relative hidden overflow-hidden px-4 pt-28 pb-8 md:block">
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-primary/20 blur-3xl"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-          <motion.div
-            className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-accent/20 blur-3xl"
-            animate={{ scale: [1.2, 1, 1.2], opacity: [0.5, 0.3, 0.5] }}
-            transition={{ duration: 8, repeat: Infinity }}
-          />
-        </div>
-
+      <section className="relative hidden overflow-hidden px-4 pt-32 pb-12 md:block">
         <div className="relative mx-auto max-w-6xl">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border bg-background/50 px-4 py-1.5 text-sm backdrop-blur-sm"
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-6 inline-flex items-center gap-2 border bg-card/80 px-4 py-1.5 font-mono text-xs font-bold uppercase tracking-widest backdrop-blur-sm"
           >
             <Sparkles className="h-4 w-4 text-primary" />
-            <span>Live API Key Discovery</span>
+            <span>SYS_DISCOVERY_PROTOCOL_ACTIVE</span>
           </motion.div>
 
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 text-4xl font-bold tracking-tight lg:text-5xl text-balance"
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="mb-4 text-5xl font-black uppercase tracking-tight lg:text-7xl text-balance"
           >
-            Discover exposed{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              API keys
-            </span>
+            Exposed <span className="text-primary italic">API_KEYS</span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="max-w-2xl text-lg text-muted-foreground text-pretty"
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="max-w-2xl text-lg font-medium text-muted-foreground text-pretty border-l-2 border-l-primary pl-4"
           >
-            Monitor and validate API keys from multiple providers in real-time.
+            {'>'} SCANNING SUBNETS... MONITORING EXPOSED SECRETS IN REAL-TIME. ALL LOGS IMMUTABLE.
           </motion.p>
         </div>
       </section>
 
       {/* Desktop Stats Grid */}
-      <section className="mx-auto hidden max-w-6xl px-4 pb-8 md:block">
+      <section className="mx-auto hidden max-w-6xl px-4 pb-12 md:block">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.1 } },
+          }}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
         >
           <motion.div
-            className="relative overflow-hidden rounded-2xl border bg-card p-5"
-            whileHover={{ y: -2 }}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { ease: [0.16, 1, 0.3, 1] } },
+            }}
+            className="group relative overflow-hidden bg-card/50 p-6 border-t-2 border-t-primary border-l border-r border-b backdrop-blur-sm transition-colors hover:bg-card hover:border-primary"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-                <Key className="h-5 w-5 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center bg-primary/20 border border-primary/30 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                <Key className="h-6 w-6" />
               </div>
               <div>
-                <div className="text-2xl font-bold tabular-nums">{stats?.total_keys ?? 0}</div>
-                <div className="text-xs text-muted-foreground">Total Keys</div>
+                <div className="font-mono text-3xl font-black text-primary tabular-nums tracking-tighter">{stats?.total_keys ?? 0}</div>
+                <div className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Total_Keys</div>
+              </div>
+            </div>
+            <div className="absolute top-0 right-0 p-2 opacity-10">
+              <Key className="h-24 w-24 -mr-6 -mt-6" />
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { ease: [0.16, 1, 0.3, 1] } },
+            }}
+            className="group relative overflow-hidden bg-card/50 p-6 border-t-2 border-t-valid border-l border-r border-b backdrop-blur-sm transition-colors hover:bg-card hover:border-valid"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center bg-valid/20 border border-valid/30 group-hover:bg-valid group-hover:text-valid-foreground transition-all duration-300">
+                <Shield className="h-6 w-6 text-valid group-hover:text-current" />
+              </div>
+              <div>
+                <div className="font-mono text-3xl font-black text-valid tabular-nums tracking-tighter">{stats?.valid_keys ?? 0}</div>
+                <div className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Valid_Keys</div>
               </div>
             </div>
           </motion.div>
 
           <motion.div
-            className="relative overflow-hidden rounded-2xl border bg-card p-5"
-            whileHover={{ y: -2 }}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { ease: [0.16, 1, 0.3, 1] } },
+            }}
+            className="group relative overflow-hidden bg-card/50 p-6 border-t-2 border-t-invalid border-l border-r border-b backdrop-blur-sm transition-colors hover:bg-card hover:border-invalid"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-valid/10">
-                <Shield className="h-5 w-5 text-valid" />
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center bg-invalid/20 border border-invalid/30 group-hover:bg-invalid group-hover:text-destructive-foreground transition-all duration-300">
+                <AlertTriangle className="h-6 w-6 text-invalid group-hover:text-current" />
               </div>
               <div>
-                <div className="text-2xl font-bold tabular-nums text-valid">{stats?.valid_keys ?? 0}</div>
-                <div className="text-xs text-muted-foreground">Valid</div>
+                <div className="font-mono text-3xl font-black text-invalid tabular-nums tracking-tighter">{stats?.invalid_keys ?? 0}</div>
+                <div className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Invalid_Keys</div>
               </div>
             </div>
           </motion.div>
 
           <motion.div
-            className="relative overflow-hidden rounded-2xl border bg-card p-5"
-            whileHover={{ y: -2 }}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { ease: [0.16, 1, 0.3, 1] } },
+            }}
+            className="group relative overflow-hidden bg-card/50 p-6 border-t-2 border-t-accent border-l border-r border-b backdrop-blur-sm transition-colors hover:bg-card hover:border-accent"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-invalid/10">
-                <AlertTriangle className="h-5 w-5 text-invalid" />
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center bg-accent/20 border border-accent/30 group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
+                <Activity className="h-6 w-6 text-accent group-hover:text-current" />
               </div>
               <div>
-                <div className="text-2xl font-bold tabular-nums text-invalid">{stats?.invalid_keys ?? 0}</div>
-                <div className="text-xs text-muted-foreground">Invalid</div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="relative overflow-hidden rounded-2xl border bg-card p-5"
-            whileHover={{ y: -2 }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
-                <Activity className="h-5 w-5 text-accent" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold tabular-nums">
+                <div className="font-mono text-3xl font-black text-accent tabular-nums tracking-tighter">
                   {stats?.by_provider ? Object.keys(stats.by_provider).length : 0}
                 </div>
-                <div className="text-xs text-muted-foreground">Providers</div>
+                <div className="font-mono text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Active_Prvds</div>
               </div>
             </div>
           </motion.div>
@@ -449,11 +452,11 @@ export default function KeyScannerPage() {
 
       {/* Keys Section */}
       <section className="mx-auto max-w-6xl px-4 pb-8">
-        <div className="mb-4 flex items-center justify-between md:mb-6">
+        <div className="mb-6 flex items-center justify-between border-b pb-2">
           <div>
-            <h2 className="text-lg font-bold md:text-2xl">Latest Discoveries</h2>
-            <p className="text-xs text-muted-foreground md:text-sm">
-              Page {currentPage} of {totalPages}
+            <h2 className="font-mono text-xl font-bold uppercase tracking-widest md:text-2xl">Data_Stream</h2>
+            <p className="font-mono text-[10px] uppercase text-muted-foreground md:text-xs">
+              Page_{currentPage} / {totalPages}
             </p>
           </div>
         </div>
@@ -480,52 +483,53 @@ export default function KeyScannerPage() {
               {(keys ?? []).map((key, index) => (
                 <motion.div
                   key={key.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.05 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.4, delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
                   layout
-                  className="group relative overflow-hidden rounded-2xl border bg-card"
+                  className="group relative overflow-hidden border bg-card transition-all hover:bg-card/80 hover:border-primary hover:shadow-[5px_5px_0_rgba(var(--color-primary),0.2)]"
                 >
                   {/* Provider color accent */}
                   <div
                     className={cn(
-                      "absolute left-0 top-0 h-full w-1 bg-gradient-to-b",
-                      getProviderGradient(key.provider)
+                      "absolute left-0 top-0 h-full w-1",
+                      getProviderColor(key.provider)
                     )}
                   />
 
-                  <div className="p-4 pl-5">
+                  <div className="p-4 md:p-6 pl-5 md:pl-8">
                     {/* Header row */}
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-4">
                         <div
                           className={cn(
-                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg md:h-12 md:w-12",
-                            getProviderGradient(key.provider)
+                            "flex h-12 w-12 shrink-0 items-center justify-center bg-background border shadow-inner",
+                            "group-hover:border-primary transition-colors duration-300"
                           )}
                         >
-                          <Key className="h-5 w-5 text-white md:h-6 md:w-6" />
+                          <Key className={cn("h-5 w-5", `text-[${getProviderColor(key.provider)}]`)} />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-bold capitalize">{key.provider}</h3>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>{new Date(key.created_at).toLocaleDateString()}</span>
+                          <h3 className="font-mono text-lg font-black uppercase tracking-wider">{key.provider}</h3>
+                          <div className="flex items-center gap-3 font-mono text-[10px] font-bold uppercase text-muted-foreground tracking-widest mt-1">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {new Date(key.created_at).toLocaleDateString()}
+                            </span>
                             {key.error_count > 0 && (
-                              <>
-                                <span className="text-error">
-                                  {key.error_count} error{key.error_count > 1 ? "s" : ""}
-                                </span>
-                              </>
+                              <span className="flex items-center gap-1 text-error bg-error/10 px-1.5 py-0.5">
+                                [ ERRORS: {key.error_count} ]
+                              </span>
                             )}
                           </div>
                         </div>
                       </div>
                       <span
                         className={cn(
-                          "shrink-0 rounded-full border px-3 py-1 text-xs font-medium",
-                          getStatusColor(key.status)
+                          "shrink-0 border px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest",
+                          getStatusColor(key.status),
+                          "shadow-[2px_2px_0_currentcolor]"
                         )}
                       >
                         {key.status}
@@ -533,22 +537,22 @@ export default function KeyScannerPage() {
                     </div>
 
                     {/* Key value */}
-                    <div className="mb-3 flex items-center gap-2">
-                      <code className="flex-1 truncate rounded-lg bg-muted/50 px-3 py-2 font-mono text-sm">
+                    <div className="mb-4 flex items-center gap-0">
+                      <code className="flex-1 truncate border border-r-0 bg-black px-4 py-3 font-mono text-sm tracking-wide text-primary shadow-inner selection:bg-primary selection:text-primary-foreground">
                         {key.key_value}
                       </code>
                       <motion.button
                         onClick={() => handleCopy(key.key_value, key.id, key.provider)}
                         className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
+                          "flex h-[46px] w-[46px] shrink-0 items-center justify-center border transition-colors",
                           copiedId === key.id
-                            ? "border-valid/20 bg-valid/10 text-valid"
-                            : "bg-background hover:bg-muted"
+                            ? "bg-valid text-valid-foreground border-valid"
+                            : "bg-muted text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         )}
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={{ scale: 0.9 }}
                       >
                         {copiedId === key.id ? (
-                          <Check className="h-4 w-4" />
+                          <Check className="h-5 w-5" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -557,31 +561,31 @@ export default function KeyScannerPage() {
 
                     {/* Source References */}
                     {key.references && key.references.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-2 border-t pt-4">
+                        <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-2">Sources:</div>
                         {key.references.slice(0, 2).map((ref) => (
                           <motion.a
                             key={ref.id}
                             href={ref.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs transition-colors hover:bg-muted"
-                            whileTap={{ scale: 0.98 }}
+                            className="flex items-center gap-3 border bg-muted/20 px-4 py-2 font-mono text-[11px] transition-colors hover:bg-primary/10 hover:border-primary/50 group/ref"
                           >
-                            <GitBranch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                            <span className="truncate font-medium">
-                              {ref.repo_owner}/{ref.repo_name}
+                            <GitBranch className="h-3.5 w-3.5 shrink-0 text-muted-foreground group-hover/ref:text-primary transition-colors" />
+                            <span className="truncate flex-1">
+                              <span className="font-bold opacity-70">{ref.repo_owner}/</span>{ref.repo_name}
+                              <span className="hidden sm:inline opacity-50 px-2">|</span>
+                              <span className="hidden items-center gap-1.5 truncate text-muted-foreground sm:inline-flex group-hover/ref:text-primary/80 transition-colors">
+                                <FileCode className="h-3 w-3 shrink-0" />
+                                {ref.file_path}
+                              </span>
                             </span>
-                            <span className="hidden text-muted-foreground sm:inline">/</span>
-                            <span className="hidden items-center gap-1 truncate text-muted-foreground sm:flex">
-                              <FileCode className="h-3 w-3 shrink-0" />
-                              {ref.file_path}
-                            </span>
-                            <ExternalLink className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                            <ExternalLink className="ml-auto h-3 w-3 shrink-0 opacity-0 group-hover/ref:opacity-100 transition-opacity" />
                           </motion.a>
                         ))}
                         {key.references.length > 2 && (
-                          <p className="text-center text-xs text-muted-foreground">
-                            +{key.references.length - 2} more source{key.references.length - 2 > 1 ? "s" : ""}
+                          <p className="text-right font-mono text-[10px] uppercase text-muted-foreground">
+                            + {key.references.length - 2} ADDL.
                           </p>
                         )}
                       </div>

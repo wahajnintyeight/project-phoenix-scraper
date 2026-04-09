@@ -13,39 +13,39 @@ interface StatsBarProps {
 const statItems = [
   {
     key: "total_keys" as const,
-    label: "Total",
+    label: "Total_Scan",
     icon: Key,
-    colorClass: "bg-primary/10 text-primary border-primary/20",
+    colorClass: "bg-primary/5 text-primary border-primary",
   },
   {
     key: "valid_keys" as const,
-    label: "Valid",
+    label: "Sys_Valid",
     icon: CheckCircle2,
-    colorClass: "bg-valid/10 text-valid border-valid/20",
+    colorClass: "bg-valid/5 text-valid border-valid",
   },
   {
     key: "invalid_keys" as const,
-    label: "Invalid",
+    label: "Sys_Invalid",
     icon: XCircle,
-    colorClass: "bg-invalid/10 text-invalid border-invalid/20",
+    colorClass: "bg-invalid/5 text-invalid border-invalid",
   },
   {
     key: "pending_keys" as const,
-    label: "Pending",
+    label: "Wait_Queue",
     icon: Clock,
-    colorClass: "bg-pending/10 text-pending border-pending/20",
+    colorClass: "bg-pending/5 text-pending border-pending",
   },
   {
     key: "error_keys" as const,
-    label: "Errors",
+    label: "Scan_Error",
     icon: AlertCircle,
-    colorClass: "bg-error/10 text-error border-error/20",
+    colorClass: "bg-error/5 text-error border-error",
   },
 ];
 
 export function StatsBar({ stats, isLoading }: StatsBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 md:gap-4 w-full">
       {statItems.map((item, index) => {
         const Icon = item.icon;
         const value = stats ? stats[item.key] : 0;
@@ -53,24 +53,27 @@ export function StatsBar({ stats, isLoading }: StatsBarProps) {
         return (
           <motion.div
             key={item.key}
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
+            transition={{ delay: index * 0.05, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              "flex items-center gap-2 rounded-full border px-3 py-1.5",
+              "flex flex-1 md:flex-none items-center gap-2 md:gap-3 border-2 px-3 py-2 md:px-4 md:py-2 min-w-[120px] transition-all duration-300 hover:bg-current/10",
               item.colorClass
             )}
           >
-            <Icon className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {isLoading ? (
-                <span className="inline-block h-4 w-6 animate-pulse rounded bg-current/20" />
-              ) : (
-                <>
-                  {value} {item.label}
-                </>
-              )}
-            </span>
+            <Icon className="h-4 w-4 md:h-5 md:w-5 shrink-0" />
+            <div className="flex flex-col flex-1">
+              <span className="font-mono text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-80">
+                {item.label}
+              </span>
+              <span className="font-mono text-sm md:text-base font-black tabular-nums tracking-tighter">
+                {isLoading ? (
+                  <span className="inline-block h-4 w-8 animate-pulse bg-current/20" />
+                ) : (
+                  value
+                )}
+              </span>
+            </div>
           </motion.div>
         );
       })}
