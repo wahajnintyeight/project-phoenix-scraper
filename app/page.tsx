@@ -1,49 +1,48 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast, Toaster } from "sonner";
 import {
   createSession,
   getSessionId,
   fetchStats,
   fetchKeys,
-  fetchQueries,
   Stats,
   ApiKey,
-  SearchQuery,
 } from "@/lib/api";
-import { StatsPanel } from "@/components/dashboard/stats-panel";
-import { KeysTable } from "@/components/dashboard/keys-table";
-import { ProvidersPanel } from "@/components/dashboard/providers-panel";
-import { QueriesPanel } from "@/components/dashboard/queries-panel";
-import { ActivityPanel } from "@/components/dashboard/activity-panel";
+import { KeyCard } from "@/components/key-card";
+import { StatsBar } from "@/components/stats-bar";
+import { FilterBar } from "@/components/filter-bar";
+import { EmptyState } from "@/components/empty-state";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import {
+  Flame,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Zap,
+} from "lucide-react";
 
-type TabId = "keys" | "providers" | "queries" | "activity";
-
-interface TabConfig {
-  id: TabId;
-  label: string;
-  count?: number;
-}
-
-export default function DashboardPage() {
+export default function KeyScannerPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("keys");
 
   // Data state
   const [stats, setStats] = useState<Stats | null>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
-  const [queries, setQueries] = useState<SearchQuery[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
-  const [isLoadingQueries, setIsLoadingQueries] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Pagination and filters
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterProvider, setFilterProvider] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize session
   useEffect(() => {
@@ -51,11 +50,18 @@ export default function DashboardPage() {
       try {
         if (!getSessionId()) {
           await createSession();
+          toast.success("Session initialized", {
+            description: "Connected to Phoenix API",
+            icon: <Zap className="h-4 w-4" />,
+          });
         }
         setError(null);
       } catch (err) {
         console.error("[v0] Session initialization failed:", err);
-        setError("Failed to initialize session. Please refresh the page.");
+        setError("Failed to connect. Please refresh the page.");
+        toast.error("Connection failed", {
+          description: "Unable to initialize session",
+        });
       } finally {
         setIsInitializing(false);
       }
@@ -95,43 +101,36 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error("[v0] Failed to fetch keys:", err);
+      toast.error("Failed to load keys", {
+        description: "Please try again",
+      });
     } finally {
       setIsLoadingKeys(false);
     }
   }, [currentPage, filterProvider, filterStatus]);
-
-  // Fetch queries
-  const loadQueries = useCallback(async () => {
-    if (!getSessionId()) return;
-    setIsLoadingQueries(true);
-    try {
-      const res = await fetchQueries();
-      if (res.code === 1022) {
-        setQueries(res.result.queries);
-      }
-    } catch (err) {
-      console.error("[v0] Failed to fetch queries:", err);
-    } finally {
-      setIsLoadingQueries(false);
-    }
-  }, []);
 
   // Load data after session is ready
   useEffect(() => {
     if (!isInitializing && !error) {
       loadStats();
       loadKeys();
-      loadQueries();
     }
-  }, [isInitializing, error, loadStats, loadKeys, loadQueries]);
+  }, [isInitializing, error, loadStats, loadKeys]);
 
-  // Reload keys when filters change
-  useEffect(() => {
-    if (!isInitializing && !error) {
-      loadKeys();
-    }
-  }, [currentPage, filterProvider, filterStatus]);
+  // Refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    toast.info("Refreshing data...", {
+      icon: <RefreshCw className="h-4 w-4 animate-spin" />,
+    });
+    await Promise.all([loadStats(), loadKeys()]);
+    setIsRefreshing(false);
+    toast.success("Data refreshed!", {
+      icon: <Sparkles className="h-4 w-4" />,
+    });
+  };
 
+  // Filter handlers
   const handleFilterProviderChange = (provider: string) => {
     setFilterProvider(provider);
     setCurrentPage(1);
@@ -142,202 +141,301 @@ export default function DashboardPage() {
     setCurrentPage(1);
   };
 
+  const clearFilters = () => {
+    setFilterProvider("");
+    setFilterStatus("");
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  // Client-side search filtering
+  const filteredKeys = useMemo(() => {
+    if (!searchQuery) return keys;
+    const query = searchQuery.toLowerCase();
+    return keys.filter(
+      (key) =>
+        key.key_value.toLowerCase().includes(query) ||
+        key.provider.toLowerCase().includes(query)
+    );
+  }, [keys, searchQuery]);
+
   const providers = stats?.by_provider ? Object.keys(stats.by_provider) : [];
 
-  const tabs: TabConfig[] = [
-    { id: "keys", label: "Keys", count: stats?.total_keys },
-    { id: "providers", label: "Providers", count: providers.length },
-    { id: "queries", label: "Queries", count: queries.length },
-    { id: "activity", label: "Activity" },
-  ];
-
+  // Loading state
   if (isInitializing) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-700 border-t-emerald-500" />
-          <p className="font-mono text-sm text-zinc-500">
-            Initializing session...
-          </p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-6"
+        >
+          <motion.div
+            className="relative flex h-20 w-20 items-center justify-center"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary via-accent to-primary opacity-20 blur-xl" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg">
+              <Flame className="h-8 w-8 text-primary-foreground" />
+            </div>
+          </motion.div>
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">Phoenix Key Scanner</h2>
+            <p className="text-sm text-muted-foreground">Initializing session...</p>
+          </div>
+        </motion.div>
+        <Toaster position="bottom-right" richColors />
       </div>
     );
   }
 
+  // Error state
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/10">
-            <svg
-              className="h-6 w-6 text-rose-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-          <p className="max-w-xs font-mono text-sm text-zinc-400">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-2 rounded border border-zinc-700 bg-zinc-800 px-4 py-2 font-mono text-sm text-zinc-300 transition-colors hover:border-zinc-600 hover:bg-zinc-700"
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-6 text-center"
+        >
+          <motion.div
+            className="flex h-20 w-20 items-center justify-center rounded-2xl bg-destructive/10"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
           >
-            Retry
-          </button>
-        </div>
+            <Flame className="h-10 w-10 text-destructive" />
+          </motion.div>
+          <div>
+            <h2 className="mb-2 text-lg font-semibold">Connection Error</h2>
+            <p className="mb-4 max-w-xs text-sm text-muted-foreground">{error}</p>
+          </div>
+          <motion.button
+            onClick={() => window.location.reload()}
+            className="rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Try Again
+          </motion.button>
+        </motion.div>
+        <Toaster position="bottom-right" richColors />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl"
+      >
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
-              <svg
-                className="h-5 w-5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-                />
-              </svg>
-            </div>
+            <motion.div
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20"
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Flame className="h-5 w-5 text-primary-foreground" />
+            </motion.div>
             <div>
-              <h1 className="font-mono text-sm font-semibold tracking-tight text-zinc-100">
-                Phoenix Key Scanner
-              </h1>
-              <p className="font-mono text-xs text-zinc-500">
-                API Key Discovery & Validation
-              </p>
+              <h1 className="text-lg font-bold tracking-tight">Phoenix</h1>
+              <p className="text-xs text-muted-foreground">Key Scanner</p>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs text-emerald-400">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Connected
-            </span>
+            <motion.button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border bg-card transition-colors hover:bg-muted",
+                isRefreshing && "pointer-events-none"
+              )}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              aria-label="Refresh data"
+            >
+              <RefreshCw
+                className={cn("h-5 w-5", isRefreshing && "animate-spin")}
+              />
+            </motion.button>
+            <ThemeToggle />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Stats Banner */}
-        <section className="mb-6 overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/50">
-          <StatsPanel stats={stats} isLoading={isLoadingStats} />
-        </section>
+      <main className="mx-auto max-w-4xl px-4 py-6">
+        {/* Stats Bar */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-6"
+        >
+          <StatsBar stats={stats} isLoading={isLoadingStats} />
+        </motion.section>
 
-        {/* Tab Navigation */}
-        <div className="mb-4 flex items-center gap-1 overflow-x-auto border-b border-zinc-800 pb-px">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+        {/* Filters */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6"
+        >
+          <FilterBar
+            providers={providers}
+            selectedProvider={filterProvider}
+            selectedStatus={filterStatus}
+            onProviderChange={handleFilterProviderChange}
+            onStatusChange={handleFilterStatusChange}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
+        </motion.section>
+
+        {/* Keys List */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          {isLoadingKeys ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="h-20 animate-pulse rounded-2xl border bg-card"
+                />
+              ))}
+            </div>
+          ) : filteredKeys.length === 0 ? (
+            <EmptyState
+              type={keys.length === 0 ? "no-keys" : "no-results"}
+              onClearFilters={clearFilters}
+            />
+          ) : (
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {filteredKeys.map((key, index) => (
+                  <KeyCard key={key._id} keyData={key} index={index} />
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+        </motion.section>
+
+        {/* Pagination */}
+        {totalPages > 1 && !isLoadingKeys && filteredKeys.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-6 flex items-center justify-center gap-2"
+          >
+            <motion.button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
               className={cn(
-                "relative flex items-center gap-2 px-4 py-2.5 font-mono text-sm transition-colors",
-                activeTab === tab.id
-                  ? "text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-400"
+                "flex h-10 w-10 items-center justify-center rounded-xl border bg-card transition-colors",
+                currentPage === 1
+                  ? "cursor-not-allowed opacity-50"
+                  : "hover:bg-muted"
               )}
+              whileHover={currentPage !== 1 ? { scale: 1.1 } : {}}
+              whileTap={currentPage !== 1 ? { scale: 0.95 } : {}}
             >
-              {tab.label}
-              {tab.count !== undefined && (
-                <span
-                  className={cn(
-                    "rounded-full px-1.5 py-0.5 font-mono text-xs tabular-nums",
-                    activeTab === tab.id
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-zinc-800 text-zinc-500"
-                  )}
-                >
-                  {tab.count}
-                </span>
+              <ChevronLeft className="h-5 w-5" />
+            </motion.button>
+
+            <div className="flex items-center gap-1">
+              {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <motion.button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-xl text-sm font-medium transition-colors",
+                      currentPage === pageNum
+                        ? "bg-primary text-primary-foreground"
+                        : "border bg-card hover:bg-muted"
+                    )}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {pageNum}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            <motion.button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border bg-card transition-colors",
+                currentPage === totalPages
+                  ? "cursor-not-allowed opacity-50"
+                  : "hover:bg-muted"
               )}
-              {activeTab === tab.id && (
-                <span className="absolute inset-x-0 -bottom-px h-px bg-emerald-500" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <section className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/50">
-          {activeTab === "keys" && (
-            <KeysTable
-              keys={keys}
-              isLoading={isLoadingKeys}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              filterProvider={filterProvider}
-              filterStatus={filterStatus}
-              onFilterProviderChange={handleFilterProviderChange}
-              onFilterStatusChange={handleFilterStatusChange}
-              providers={providers}
-            />
-          )}
-
-          {activeTab === "providers" && (
-            <ProvidersPanel
-              providers={stats?.by_provider || {}}
-              isLoading={isLoadingStats}
-            />
-          )}
-
-          {activeTab === "queries" && (
-            <QueriesPanel
-              queries={queries}
-              isLoading={isLoadingQueries}
-              onRefresh={loadQueries}
-            />
-          )}
-
-          {activeTab === "activity" && (
-            <ActivityPanel stats={stats} isLoading={isLoadingStats} />
-          )}
-        </section>
+              whileHover={currentPage !== totalPages ? { scale: 1.1 } : {}}
+              whileTap={currentPage !== totalPages ? { scale: 0.95 } : {}}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </motion.button>
+          </motion.section>
+        )}
 
         {/* Footer */}
-        <footer className="mt-8 border-t border-zinc-800/50 pt-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <p className="font-mono text-xs text-zinc-600">
-              Phoenix Key Scanner v2.0
-            </p>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://api.theprojectphoenix.top"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-xs text-zinc-500 transition-colors hover:text-zinc-400"
-              >
-                API Docs
-              </a>
-              <span className="font-mono text-xs text-zinc-700">|</span>
-              <span className="font-mono text-xs text-zinc-600">
-                {new Date().toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-          </div>
-        </footer>
+        <motion.footer
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="mt-12 border-t pt-6 text-center"
+        >
+          <p className="text-sm text-muted-foreground">
+            Phoenix Key Scanner v2.0 &middot;{" "}
+            <a
+              href="https://api.theprojectphoenix.top"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              API Documentation
+            </a>
+          </p>
+        </motion.footer>
       </main>
+
+      {/* Toast notifications */}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          classNames: {
+            toast: "rounded-xl border shadow-lg",
+            title: "font-medium",
+            description: "text-sm text-muted-foreground",
+          },
+        }}
+        richColors
+      />
     </div>
   );
 }
