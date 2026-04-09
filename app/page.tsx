@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
 import {
   createSession,
@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Copy,
   Check,
+  ChevronLeft,
   ChevronRight,
   Activity,
   Clock,
@@ -28,6 +29,9 @@ import {
   ExternalLink,
   GitBranch,
   FileCode,
+  Home,
+  Search,
+  Settings,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -39,10 +43,9 @@ export default function KeyScannerPage() {
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const { scrollY } = useScroll();
-  const heroOpacity = useTransform(scrollY, [0, 200], [1, 0]);
-  const heroScale = useTransform(scrollY, [0, 200], [1, 0.95]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [mobileTab, setMobileTab] = useState<"home" | "search" | "settings">("home");
 
   // Initialize session
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function KeyScannerPage() {
         }
         setError(null);
       } catch (err) {
-        console.error("[v0] Session initialization failed:", err);
+        console.error("Session initialization failed:", err);
         setError("Failed to connect. Please refresh the page.");
         toast.error("Connection failed");
       } finally {
@@ -67,23 +70,24 @@ export default function KeyScannerPage() {
     init();
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (page: number = 1) => {
     if (!getSessionId()) return;
     setIsLoadingKeys(true);
     try {
       const [statsRes, keysRes] = await Promise.all([
         fetchStats(),
-        fetchKeys(1),
+        fetchKeys(page),
       ]);
       
       if (statsRes.code === 1009) {
         setStats(statsRes.result);
       }
       if (keysRes.code === 1009) {
-        setKeys(keysRes.result.keys.slice(0, 6)); // Only show first 6
+        setKeys(keysRes.result.keys);
+        setTotalPages(keysRes.result.total_pages || 1);
       }
     } catch (err) {
-      console.error("[v0] Failed to fetch data:", err);
+      console.error("Failed to fetch data:", err);
       toast.error("Failed to load data");
     } finally {
       setIsLoadingKeys(false);
@@ -92,16 +96,16 @@ export default function KeyScannerPage() {
 
   useEffect(() => {
     if (!isInitializing && !error) {
-      loadData();
+      loadData(currentPage);
     }
-  }, [isInitializing, error, loadData]);
+  }, [isInitializing, error, loadData, currentPage]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     toast.info("Refreshing...", {
       icon: <RefreshCw className="h-4 w-4 animate-spin" />,
     });
-    await loadData();
+    await loadData(currentPage);
     setIsRefreshing(false);
     toast.success("Updated!", {
       icon: <Sparkles className="h-4 w-4" />,
@@ -118,6 +122,13 @@ export default function KeyScannerPage() {
       setTimeout(() => setCopiedId(null), 2000);
     } catch {
       toast.error("Failed to copy");
+    }
+  };
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -143,6 +154,25 @@ export default function KeyScannerPage() {
     return colors[status] || colors.Error;
   };
 
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages: (number | "...")[] = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
+
   if (isInitializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -163,27 +193,27 @@ export default function KeyScannerPage() {
             <p className="text-sm text-muted-foreground">Initializing...</p>
           </div>
         </motion.div>
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="top-center" richColors />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-destructive/10 mx-auto">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-destructive/10">
             <Flame className="h-10 w-10 text-destructive" />
           </div>
           <h2 className="mb-2 text-xl font-bold">Connection Error</h2>
           <p className="mb-6 text-sm text-muted-foreground">{error}</p>
           <motion.button
             onClick={() => window.location.reload()}
-            className="rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground"
+            className="rounded-2xl bg-primary px-6 py-3 font-medium text-primary-foreground"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -195,12 +225,12 @@ export default function KeyScannerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Floating Header */}
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Desktop Header */}
       <motion.header
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="fixed top-4 left-1/2 z-50 -translate-x-1/2"
+        className="fixed top-4 left-1/2 z-50 hidden -translate-x-1/2 md:block"
       >
         <div className="flex items-center gap-4 rounded-2xl border bg-background/80 px-6 py-3 shadow-lg backdrop-blur-xl">
           <div className="flex items-center gap-3">
@@ -212,9 +242,7 @@ export default function KeyScannerPage() {
               <p className="text-xs text-muted-foreground">Key Scanner</p>
             </div>
           </div>
-
           <div className="h-8 w-px bg-border" />
-
           <div className="flex items-center gap-2">
             <motion.button
               onClick={handleRefresh}
@@ -230,12 +258,77 @@ export default function KeyScannerPage() {
         </div>
       </motion.header>
 
-      {/* Hero Section */}
-      <motion.section
-        style={{ opacity: heroOpacity, scale: heroScale }}
-        className="relative overflow-hidden px-4 pt-32 pb-12"
+      {/* Mobile Header - App Style */}
+      <motion.header
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur-xl md:hidden"
       >
-        {/* Gradient orbs */}
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg">
+              <Flame className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold">Phoenix</h1>
+              <p className="text-xs text-muted-foreground">
+                {stats?.total_keys ?? 0} keys found
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-muted"
+              whileTap={{ scale: 0.95 }}
+            >
+              <RefreshCw className={cn("h-5 w-5", isRefreshing && "animate-spin")} />
+            </motion.button>
+            <ThemeToggle />
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Mobile Stats Pills */}
+      <div className="overflow-x-auto px-4 py-3 md:hidden">
+        <div className="flex gap-2">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex shrink-0 items-center gap-2 rounded-2xl bg-valid/10 px-4 py-2"
+          >
+            <Shield className="h-4 w-4 text-valid" />
+            <span className="text-sm font-semibold text-valid">{stats?.valid_keys ?? 0}</span>
+            <span className="text-xs text-valid/70">valid</span>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.05 }}
+            className="flex shrink-0 items-center gap-2 rounded-2xl bg-invalid/10 px-4 py-2"
+          >
+            <AlertTriangle className="h-4 w-4 text-invalid" />
+            <span className="text-sm font-semibold text-invalid">{stats?.invalid_keys ?? 0}</span>
+            <span className="text-xs text-invalid/70">invalid</span>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="flex shrink-0 items-center gap-2 rounded-2xl bg-primary/10 px-4 py-2"
+          >
+            <Activity className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">
+              {stats?.by_provider ? Object.keys(stats.by_provider).length : 0}
+            </span>
+            <span className="text-xs text-primary/70">providers</span>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Desktop Hero Section */}
+      <section className="relative hidden overflow-hidden px-4 pt-28 pb-8 md:block">
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
             className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-primary/20 blur-3xl"
@@ -249,11 +342,10 @@ export default function KeyScannerPage() {
           />
         </div>
 
-        <div className="relative mx-auto max-w-6xl text-center">
+        <div className="relative mx-auto max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
             className="mb-4 inline-flex items-center gap-2 rounded-full border bg-background/50 px-4 py-1.5 text-sm backdrop-blur-sm"
           >
             <Sparkles className="h-4 w-4 text-primary" />
@@ -263,8 +355,8 @@ export default function KeyScannerPage() {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6 text-5xl font-bold tracking-tight sm:text-7xl text-balance"
+            transition={{ delay: 0.1 }}
+            className="mb-4 text-4xl font-bold tracking-tight lg:text-5xl text-balance"
           >
             Discover exposed{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -275,226 +367,212 @@ export default function KeyScannerPage() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground text-pretty"
+            transition={{ delay: 0.2 }}
+            className="max-w-2xl text-lg text-muted-foreground text-pretty"
           >
             Monitor and validate API keys from multiple providers in real-time.
-            Secure your infrastructure with automated discovery.
           </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-4"
-          >
-            <motion.button
-              className="group flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-medium text-primary-foreground shadow-lg shadow-primary/20"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span>Explore Keys</span>
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </motion.button>
-            <motion.button
-              className="flex items-center gap-2 rounded-xl border bg-background/50 px-6 py-3 font-medium backdrop-blur-sm"
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Shield className="h-4 w-4" />
-              <span>Documentation</span>
-            </motion.button>
-          </motion.div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* Stats Bento Grid */}
-      <section className="mx-auto max-w-6xl px-4 pb-12">
+      {/* Desktop Stats Grid */}
+      <section className="mx-auto hidden max-w-6xl px-4 pb-8 md:block">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.3 }}
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
         >
-          {/* Total Keys */}
           <motion.div
-            className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-card to-card/50 p-6 shadow-lg"
-            whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+            className="relative overflow-hidden rounded-2xl border bg-card p-5"
+            whileHover={{ y: -2 }}
           >
-            <div className="relative z-10">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-                <Key className="h-6 w-6 text-primary" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <Key className="h-5 w-5 text-primary" />
               </div>
-              <div className="mb-1 text-3xl font-bold tabular-nums">
-                {stats?.total_keys ?? 0}
+              <div>
+                <div className="text-2xl font-bold tabular-nums">{stats?.total_keys ?? 0}</div>
+                <div className="text-xs text-muted-foreground">Total Keys</div>
               </div>
-              <div className="text-sm text-muted-foreground">Total Keys</div>
-            </div>
-            <div className="absolute -right-4 -bottom-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl" />
-          </motion.div>
-
-          {/* Valid Keys */}
-          <motion.div
-            className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-valid/5 to-card p-6 shadow-lg"
-            whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
-          >
-            <div className="relative z-10">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-valid/10">
-                <Shield className="h-6 w-6 text-valid" />
-              </div>
-              <div className="mb-1 text-3xl font-bold tabular-nums text-valid">
-                {stats?.valid_keys ?? 0}
-              </div>
-              <div className="text-sm text-muted-foreground">Valid</div>
             </div>
           </motion.div>
 
-          {/* Invalid Keys */}
           <motion.div
-            className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-invalid/5 to-card p-6 shadow-lg"
-            whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+            className="relative overflow-hidden rounded-2xl border bg-card p-5"
+            whileHover={{ y: -2 }}
           >
-            <div className="relative z-10">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-invalid/10">
-                <AlertTriangle className="h-6 w-6 text-invalid" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-valid/10">
+                <Shield className="h-5 w-5 text-valid" />
               </div>
-              <div className="mb-1 text-3xl font-bold tabular-nums text-invalid">
-                {stats?.invalid_keys ?? 0}
+              <div>
+                <div className="text-2xl font-bold tabular-nums text-valid">{stats?.valid_keys ?? 0}</div>
+                <div className="text-xs text-muted-foreground">Valid</div>
               </div>
-              <div className="text-sm text-muted-foreground">Invalid</div>
             </div>
           </motion.div>
 
-          {/* Activity */}
           <motion.div
-            className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-accent/5 to-card p-6 shadow-lg"
-            whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+            className="relative overflow-hidden rounded-2xl border bg-card p-5"
+            whileHover={{ y: -2 }}
           >
-            <div className="relative z-10">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10">
-                <Activity className="h-6 w-6 text-accent" />
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-invalid/10">
+                <AlertTriangle className="h-5 w-5 text-invalid" />
               </div>
-              <div className="mb-1 text-3xl font-bold tabular-nums">
-                {(stats?.by_provider && Object.keys(stats.by_provider).length) ?? 0}
+              <div>
+                <div className="text-2xl font-bold tabular-nums text-invalid">{stats?.invalid_keys ?? 0}</div>
+                <div className="text-xs text-muted-foreground">Invalid</div>
               </div>
-              <div className="text-sm text-muted-foreground">Providers</div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="relative overflow-hidden rounded-2xl border bg-card p-5"
+            whileHover={{ y: -2 }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
+                <Activity className="h-5 w-5 text-accent" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold tabular-nums">
+                  {stats?.by_provider ? Object.keys(stats.by_provider).length : 0}
+                </div>
+                <div className="text-xs text-muted-foreground">Providers</div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
       </section>
 
-      {/* Keys Showcase - Bento Grid */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mb-8"
-        >
-          <h2 className="mb-2 text-3xl font-bold">Latest Discoveries</h2>
-          <p className="text-muted-foreground">
-            Recently discovered API keys from various providers
-          </p>
-        </motion.div>
+      {/* Keys Section */}
+      <section className="mx-auto max-w-6xl px-4 pb-8">
+        <div className="mb-4 flex items-center justify-between md:mb-6">
+          <div>
+            <h2 className="text-lg font-bold md:text-2xl">Latest Discoveries</h2>
+            <p className="text-xs text-muted-foreground md:text-sm">
+              Page {currentPage} of {totalPages}
+            </p>
+          </div>
+        </div>
 
         {isLoadingKeys ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="h-48 animate-pulse rounded-2xl border bg-card"
+                className="h-32 animate-pulse rounded-2xl border bg-card md:h-40"
               />
             ))}
           </div>
         ) : (
           <motion.div
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            className="space-y-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <AnimatePresence>
-              {keys.map((key, index) => (
+            <AnimatePresence mode="popLayout">
+              {(keys ?? []).map((key, index) => (
                 <motion.div
                   key={key.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                  className={cn(
-                    "group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-lg",
-                    index === 0 && "sm:col-span-2 lg:col-span-1"
-                  )}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: index * 0.05 }}
+                  layout
+                  className="group relative overflow-hidden rounded-2xl border bg-card"
                 >
-                  {/* Gradient accent */}
-                  <div className={cn(
-                    "absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100",
-                    "bg-gradient-to-br",
-                    getProviderGradient(key.provider),
-                    "opacity-5"
-                  )} />
+                  {/* Provider color accent */}
+                  <div
+                    className={cn(
+                      "absolute left-0 top-0 h-full w-1 bg-gradient-to-b",
+                      getProviderGradient(key.provider)
+                    )}
+                  />
 
-                  <div className="relative z-10">
-                    {/* Provider header */}
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg",
-                        getProviderGradient(key.provider)
-                      )}>
-                        <Key className="h-6 w-6 text-white" />
+                  <div className="p-4 pl-5">
+                    {/* Header row */}
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={cn(
+                            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg md:h-12 md:w-12",
+                            getProviderGradient(key.provider)
+                          )}
+                        >
+                          <Key className="h-5 w-5 text-white md:h-6 md:w-6" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-bold capitalize">{key.provider}</h3>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>{new Date(key.created_at).toLocaleDateString()}</span>
+                            {key.error_count > 0 && (
+                              <>
+                                <span className="text-error">
+                                  {key.error_count} error{key.error_count > 1 ? "s" : ""}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <span className={cn(
-                        "rounded-full border px-3 py-1 text-xs font-medium",
-                        getStatusColor(key.status)
-                      )}>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full border px-3 py-1 text-xs font-medium",
+                          getStatusColor(key.status)
+                        )}
+                      >
                         {key.status}
                       </span>
                     </div>
 
-                    {/* Provider name */}
-                    <h3 className="mb-2 text-lg font-bold capitalize">
-                      {key.provider}
-                    </h3>
-
-                    {/* Key preview */}
-                    <div className="mb-4 font-mono text-sm text-muted-foreground">
-                      {key.key_value.slice(0, 20)}...
-                    </div>
-
-                    {/* Metadata */}
-                    <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>{new Date(key.created_at).toLocaleDateString()}</span>
-                      </div>
-                      {key.error_count > 0 && (
-                        <div className="flex items-center gap-1 text-error">
-                          <AlertTriangle className="h-3 w-3" />
-                          <span>{key.error_count} errors</span>
-                        </div>
-                      )}
+                    {/* Key value */}
+                    <div className="mb-3 flex items-center gap-2">
+                      <code className="flex-1 truncate rounded-lg bg-muted/50 px-3 py-2 font-mono text-sm">
+                        {key.key_value}
+                      </code>
+                      <motion.button
+                        onClick={() => handleCopy(key.key_value, key.id, key.provider)}
+                        className={cn(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors",
+                          copiedId === key.id
+                            ? "border-valid/20 bg-valid/10 text-valid"
+                            : "bg-background hover:bg-muted"
+                        )}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {copiedId === key.id ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </motion.button>
                     </div>
 
                     {/* Source References */}
                     {key.references && key.references.length > 0 && (
-                      <div className="mb-4 space-y-2">
+                      <div className="space-y-2">
                         {key.references.slice(0, 2).map((ref) => (
                           <motion.a
                             key={ref.id}
                             href={ref.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-xs transition-colors hover:bg-muted"
-                            whileHover={{ x: 4 }}
+                            className="flex items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs transition-colors hover:bg-muted"
+                            whileTap={{ scale: 0.98 }}
                           >
                             <GitBranch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                             <span className="truncate font-medium">
                               {ref.repo_owner}/{ref.repo_name}
                             </span>
-                            <span className="text-muted-foreground">/</span>
-                            <span className="flex items-center gap-1 truncate text-muted-foreground">
+                            <span className="hidden text-muted-foreground sm:inline">/</span>
+                            <span className="hidden items-center gap-1 truncate text-muted-foreground sm:flex">
                               <FileCode className="h-3 w-3 shrink-0" />
                               {ref.file_path}
                             </span>
@@ -502,37 +580,12 @@ export default function KeyScannerPage() {
                           </motion.a>
                         ))}
                         {key.references.length > 2 && (
-                          <div className="text-center text-xs text-muted-foreground">
+                          <p className="text-center text-xs text-muted-foreground">
                             +{key.references.length - 2} more source{key.references.length - 2 > 1 ? "s" : ""}
-                          </div>
+                          </p>
                         )}
                       </div>
                     )}
-
-                    {/* Copy button */}
-                    <motion.button
-                      onClick={() => handleCopy(key.key_value, key.id, key.provider)}
-                      className={cn(
-                        "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
-                        copiedId === key.id
-                          ? "bg-valid/10 text-valid border-valid/20"
-                          : "bg-background hover:bg-muted"
-                      )}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      {copiedId === key.id ? (
-                        <>
-                          <Check className="h-4 w-4" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4" />
-                          <span>Copy Key</span>
-                        </>
-                      )}
-                    </motion.button>
                   </div>
                 </motion.div>
               ))}
@@ -540,32 +593,132 @@ export default function KeyScannerPage() {
           </motion.div>
         )}
 
-        {/* View More */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2 }}
-          className="mt-8 text-center"
-        >
-          <motion.button
-            className="inline-flex items-center gap-2 rounded-xl border bg-background px-6 py-3 font-medium hover:bg-muted"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+        {/* Pagination */}
+        {totalPages > 1 && !isLoadingKeys && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex items-center justify-center gap-1 md:gap-2"
           >
-            <span>View All Keys</span>
-            <ChevronRight className="h-4 w-4" />
-          </motion.button>
-        </motion.div>
+            {/* Previous button */}
+            <motion.button
+              onClick={() => goToPage(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border transition-colors md:h-11 md:w-11",
+                currentPage === 1
+                  ? "cursor-not-allowed opacity-40"
+                  : "hover:bg-muted"
+              )}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </motion.button>
+
+            {/* Page numbers - Desktop */}
+            <div className="hidden items-center gap-1 md:flex">
+              {getPageNumbers().map((page, index) =>
+                page === "..." ? (
+                  <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                    ...
+                  </span>
+                ) : (
+                  <motion.button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={cn(
+                      "flex h-11 w-11 items-center justify-center rounded-xl border text-sm font-medium transition-colors",
+                      currentPage === page
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "hover:bg-muted"
+                    )}
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ y: -2 }}
+                  >
+                    {page}
+                  </motion.button>
+                )
+              )}
+            </div>
+
+            {/* Page indicator - Mobile */}
+            <div className="flex items-center gap-3 px-4 md:hidden">
+              <span className="font-mono text-sm tabular-nums">
+                {currentPage} / {totalPages}
+              </span>
+            </div>
+
+            {/* Next button */}
+            <motion.button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border transition-colors md:h-11 md:w-11",
+                currentPage === totalPages
+                  ? "cursor-not-allowed opacity-40"
+                  : "hover:bg-muted"
+              )}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </motion.button>
+          </motion.div>
+        )}
       </section>
 
-      {/* Footer */}
-      <footer className="border-t py-8">
+      {/* Desktop Footer */}
+      <footer className="hidden border-t py-6 md:block">
         <div className="mx-auto max-w-6xl px-4 text-center text-sm text-muted-foreground">
           <p>Phoenix Key Scanner &middot; Powered by Project Phoenix</p>
         </div>
       </footer>
 
-      <Toaster position="bottom-right" richColors />
+      {/* Mobile Bottom Navigation */}
+      <motion.nav
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-xl md:hidden"
+      >
+        <div className="flex items-center justify-around py-2">
+          <motion.button
+            onClick={() => setMobileTab("home")}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-6 py-2 transition-colors",
+              mobileTab === "home" ? "text-primary" : "text-muted-foreground"
+            )}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Home</span>
+          </motion.button>
+          <motion.button
+            onClick={() => setMobileTab("search")}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-6 py-2 transition-colors",
+              mobileTab === "search" ? "text-primary" : "text-muted-foreground"
+            )}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Search</span>
+          </motion.button>
+          <motion.button
+            onClick={() => setMobileTab("settings")}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-6 py-2 transition-colors",
+              mobileTab === "settings" ? "text-primary" : "text-muted-foreground"
+            )}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Settings</span>
+          </motion.button>
+        </div>
+        {/* Safe area for iOS */}
+        <div className="h-[env(safe-area-inset-bottom)]" />
+      </motion.nav>
+
+      <Toaster position="top-center" richColors />
     </div>
   );
 }
