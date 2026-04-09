@@ -150,9 +150,10 @@ export default function KeyScannerPage() {
 
   // Client-side search filtering
   const filteredKeys = useMemo(() => {
-    if (!searchQuery) return keys;
+    const keysList = keys ?? [];
+    if (!searchQuery) return keysList;
     const query = searchQuery.toLowerCase();
-    return keys.filter(
+    return keysList.filter(
       (key) =>
         key.key_value.toLowerCase().includes(query) ||
         key.provider.toLowerCase().includes(query)
@@ -316,15 +317,15 @@ export default function KeyScannerPage() {
                 />
               ))}
             </div>
-          ) : filteredKeys.length === 0 ? (
+          ) : (filteredKeys ?? []).length === 0 ? (
             <EmptyState
-              type={keys.length === 0 ? "no-keys" : "no-results"}
+              type={(keys ?? []).length === 0 ? "no-keys" : "no-results"}
               onClearFilters={clearFilters}
             />
           ) : (
             <div className="space-y-3">
               <AnimatePresence mode="popLayout">
-                {filteredKeys.map((key, index) => (
+                {(filteredKeys ?? []).map((key, index) => (
                   <KeyCard key={key.id} keyData={key} index={index} />
                 ))}
               </AnimatePresence>
@@ -333,7 +334,7 @@ export default function KeyScannerPage() {
         </motion.section>
 
         {/* Pagination */}
-        {totalPages > 1 && !isLoadingKeys && filteredKeys.length > 0 && (
+        {totalPages > 1 && !isLoadingKeys && (filteredKeys ?? []).length > 0 && (
           <motion.section
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
