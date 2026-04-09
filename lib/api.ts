@@ -44,6 +44,17 @@ async function authenticatedFetch<T>(
 }
 
 // Types
+export interface Reference {
+  id: string;
+  api_key_id: string;
+  repo_url: string;
+  repo_owner: string;
+  repo_name: string;
+  file_url: string;
+  file_path: string;
+  found_at: string;
+}
+
 export interface ApiKey {
   id: string;
   key_value: string;
@@ -54,6 +65,7 @@ export interface ApiKey {
   last_seen_at?: string;
   error_count: number;
   repo_refs?: string[];
+  references?: Reference[];
 }
 
 export interface KeysResponse {

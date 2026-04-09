@@ -18,15 +18,16 @@ import {
   Sparkles,
   Zap,
   Shield,
-  Eye,
   AlertTriangle,
   Copy,
   Check,
   ChevronRight,
-  TrendingUp,
   Activity,
   Clock,
   Key,
+  ExternalLink,
+  GitBranch,
+  FileCode,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -463,7 +464,7 @@ export default function KeyScannerPage() {
                     </div>
 
                     {/* Metadata */}
-                    <div className="mb-4 flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="mb-3 flex items-center gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         <span>{new Date(key.created_at).toLocaleDateString()}</span>
@@ -475,6 +476,38 @@ export default function KeyScannerPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Source References */}
+                    {key.references && key.references.length > 0 && (
+                      <div className="mb-4 space-y-2">
+                        {key.references.slice(0, 2).map((ref) => (
+                          <motion.a
+                            key={ref.id}
+                            href={ref.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2 text-xs transition-colors hover:bg-muted"
+                            whileHover={{ x: 4 }}
+                          >
+                            <GitBranch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate font-medium">
+                              {ref.repo_owner}/{ref.repo_name}
+                            </span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className="flex items-center gap-1 truncate text-muted-foreground">
+                              <FileCode className="h-3 w-3 shrink-0" />
+                              {ref.file_path}
+                            </span>
+                            <ExternalLink className="ml-auto h-3 w-3 shrink-0 text-muted-foreground" />
+                          </motion.a>
+                        ))}
+                        {key.references.length > 2 && (
+                          <div className="text-center text-xs text-muted-foreground">
+                            +{key.references.length - 2} more source{key.references.length - 2 > 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Copy button */}
                     <motion.button
