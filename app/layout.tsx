@@ -1,18 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { JetBrains_Mono, Syne } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
-
-const syne = Syne({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
 
 export const metadata: Metadata = {
   title: 'Phoenix Key Scanner | API Key Discovery & Validation',
@@ -51,7 +40,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${syne.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.bunny.net" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800|jetbrains-mono:400,500,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

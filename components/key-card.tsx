@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ApiKey } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import * as Dialog from "@radix-ui/react-dialog";
 import {
   Copy,
   Check,
-  ChevronDown,
   Key,
   Clock,
   ExternalLink,
@@ -16,8 +16,13 @@ import {
   CheckCircle2,
   Loader2,
   XCircle,
-  Shield,
-  Zap,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  CalendarClock,
+  Sparkles,
+  X,
+  Fingerprint,
 } from "lucide-react";
 
 interface KeyCardProps {
@@ -28,309 +33,277 @@ interface KeyCardProps {
 const statusConfig = {
   Valid: {
     icon: CheckCircle2,
-    label: "Sys_Valid",
-    className: "bg-valid/10 text-valid border-valid",
-    accentColor: "border-l-valid",
+    label: "Verified",
+    className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   },
   Invalid: {
     icon: XCircle,
-    label: "Sys_Invalid",
-    className: "bg-invalid/10 text-invalid border-invalid",
-    accentColor: "border-l-invalid",
+    label: "Invalid",
+    className: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
   },
   Pending: {
     icon: Loader2,
-    label: "Wait_Queue",
-    className: "bg-pending/10 text-pending border-pending",
-    accentColor: "border-l-pending",
+    label: "Pending",
+    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   },
   Error: {
     icon: AlertCircle,
-    label: "Scan_Error",
-    className: "bg-error/10 text-error border-error",
-    accentColor: "border-l-error",
+    label: "Error",
+    className: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
   },
 };
 
-const providerConfig: Record<string, { bg: string; icon: string; accent: string }> = {
-  openai: { bg: "bg-emerald-500/10", icon: "text-emerald-600 dark:text-emerald-400", accent: "border-l-emerald-500" },
-  anthropic: { bg: "bg-orange-500/10", icon: "text-orange-600 dark:text-orange-400", accent: "border-l-orange-500" },
-  google: { bg: "bg-blue-500/10", icon: "text-blue-600 dark:text-blue-400", accent: "border-l-blue-500" },
-  openrouter: { bg: "bg-fuchsia-500/10", icon: "text-fuchsia-600 dark:text-fuchsia-400", accent: "border-l-fuchsia-500" },
-  github: { bg: "bg-slate-500/10", icon: "text-slate-700 dark:text-slate-300", accent: "border-l-slate-500" },
-  stripe: { bg: "bg-violet-500/10", icon: "text-violet-600 dark:text-violet-400", accent: "border-l-violet-500" },
-  aws: { bg: "bg-amber-500/10", icon: "text-amber-600 dark:text-amber-400", accent: "border-l-amber-500" },
-  azure: { bg: "bg-sky-500/10", icon: "text-sky-600 dark:text-sky-400", accent: "border-l-sky-500" },
-  default: { bg: "bg-primary/10", icon: "text-primary", accent: "border-l-primary" },
+const providerConfig: Record<
+  string,
+  { primary: string; glow: string; soft: string; text: string }
+> = {
+  openai: {
+    primary: "bg-emerald-500",
+    glow: "shadow-emerald-500/20",
+    soft: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    text: "text-emerald-500",
+  },
+  anthropic: {
+    primary: "bg-orange-500",
+    glow: "shadow-orange-500/20",
+    soft: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
+    text: "text-orange-500",
+  },
+  google: {
+    primary: "bg-blue-500",
+    glow: "shadow-blue-500/20",
+    soft: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    text: "text-blue-500",
+  },
+  openrouter: {
+    primary: "bg-violet-600",
+    glow: "shadow-violet-600/20",
+    soft: "bg-violet-600/10 text-violet-700 dark:text-violet-300",
+    text: "text-violet-600",
+  },
+  github: {
+    primary: "bg-slate-700",
+    glow: "shadow-slate-700/20",
+    soft: "bg-slate-700/10 text-slate-700 dark:text-slate-300",
+    text: "text-slate-700",
+  },
+  stripe: {
+    primary: "bg-indigo-500",
+    glow: "shadow-indigo-500/20",
+    soft: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    text: "text-indigo-500",
+  },
+  default: {
+    primary: "bg-zinc-500",
+    glow: "shadow-zinc-500/20",
+    soft: "bg-zinc-500/10 text-zinc-700 dark:text-zinc-300",
+    text: "text-zinc-500",
+  },
 };
 
 export function KeyCard({ keyData, index }: KeyCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
 
   const status = statusConfig[keyData.status] || statusConfig.Error;
   const StatusIcon = status.icon;
-  const provider = providerConfig[keyData.provider.toLowerCase()] || providerConfig.default;
+  const provider =
+    providerConfig[keyData.provider.toLowerCase()] || providerConfig.default;
 
-  const maskedKey = keyData.key_value.slice(0, 8) + "..." + keyData.key_value.slice(-4);
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCopy = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       await navigator.clipboard.writeText(keyData.key_value);
       setIsCopied(true);
-      toast.success("DATA_COPIED", {
-        description: `[${keyData.provider}] key transferred to clipboard.`,
-        icon: <Copy className="h-4 w-4" />,
+      toast.success("Key Sequence Copied", {
+        icon: <Fingerprint className="h-4 w-4" />,
       });
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
-      toast.error("COPY_FAILED", {
-        description: "Clipboard access denied.",
-      });
-    }
-  };
-
-  const handleReveal = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsRevealed(!isRevealed);
-    if (!isRevealed) {
-      toast.info("DATA_DECRYPTED", {
-        description: "Key payload is now visible.",
-        duration: 2000,
+      toast.error("Access Denied", {
+        description: "System clipboard interaction failed.",
       });
     }
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    }).toUpperCase();
+    });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ 
-        delay: index * 0.04, 
-        duration: 0.4,
-        ease: [0.16, 1, 0.3, 1]
-      }}
-      layout
-      className="w-full"
-    >
+    <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <motion.div
-        className={cn(
-          "group relative flex flex-col border-2 border-border bg-card transition-all duration-300",
-          "hover:border-primary hover:shadow-[4px_4px_0_rgba(var(--color-primary),0.2)]",
-          isExpanded && "border-primary shadow-[4px_4px_0_rgba(var(--color-primary),0.2)]"
-        )}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: index * 0.05, ease: [0.19, 1, 0.22, 1] }}
       >
-        {/* Accent Edge */}
-        <div className={cn("absolute left-0 top-0 h-full w-1", provider.accent, "border-l-2")} />
-
-        {/* Main Header / collapsed view */}
-        <div 
-          className="flex flex-col md:flex-row w-full cursor-pointer md:items-center gap-4 p-4 pl-6"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {/* Provider Graphic Header for Mobile */}
-          <div className="flex w-full md:w-auto items-center justify-between">
-            <div className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center border-2 bg-background transition-all duration-300 group-hover:border-primary",
-              )}
-            >
-              <Key className={cn("h-6 w-6", provider.icon)} />
-            </div>
-
-            {/* Mobile Actions: Only display chevron if we don't have enough width */}
-            <div className="md:hidden flex items-center gap-2">
-              <motion.button
-                onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                animate={{ rotate: isExpanded ? 180 : 0 }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        <Dialog.Trigger asChild>
+          <motion.article
+            whileHover={{ y: -4 }}
+            className="group relative cursor-pointer overflow-hidden rounded-[24px] border border-white/10 bg-card/40 p-5 shadow-xl backdrop-blur-md transition-all hover:bg-card/60"
+          >
+            <div className="flex items-start justify-between">
+              <div
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center border-2 transition-all duration-300",
-                  "hover:bg-primary hover:text-primary-foreground border-border hover:border-primary active:scale-95"
+                  "flex h-12 w-12 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110",
+                  provider.primary,
+                  provider.glow
                 )}
               >
-                <ChevronDown className="h-5 w-5" />
-              </motion.button>
-            </div>
-          </div>
-
-          {/* Key Title and Snapshot */}
-          <div className="min-w-0 flex-1 text-left flex flex-col gap-1 md:gap-0">
-            <div className="flex flex-wrap items-center gap-2 md:mb-1">
-              <span className="font-mono text-lg font-black uppercase text-foreground tracking-widest">
-                {keyData.provider}
-              </span>
+                <Key className="h-5 w-5 text-white" />
+              </div>
               <span
                 className={cn(
-                  "inline-flex items-center gap-1.5 border-2 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest",
+                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
                   status.className
                 )}
               >
-                <StatusIcon className={cn("h-3 w-3", keyData.status === "Pending" && "animate-spin")} />
+                <StatusIcon className="h-3 w-3" />
                 {status.label}
               </span>
             </div>
-            <p className="truncate font-mono text-sm text-muted-foreground tracking-widest hidden md:block">
-              {maskedKey}
-            </p>
-          </div>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
-            <motion.button
-              onClick={handleCopy}
-              className={cn(
-                "flex h-12 w-12 items-center justify-center border-2 transition-all duration-300",
-                isCopied 
-                  ? "bg-valid text-valid-foreground border-valid" 
-                  : "bg-background border-border hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95"
-              )}
-              whileTap={{ scale: 0.9 }}
-            >
-              <AnimatePresence mode="wait">
-                {isCopied ? (
-                  <motion.div
-                    key="check"
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: 180 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Check className="h-5 w-5" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="copy"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                  >
-                    <Copy className="h-5 w-5" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
+            <div className="mt-4">
+              <h3 className="font-mono text-lg font-bold uppercase tracking-tighter text-foreground">
+                {keyData.provider}
+              </h3>
+              <p className="text-xs text-muted-foreground/80">
+                Created {formatDate(keyData.created_at)}
+              </p>
+            </div>
 
-            <motion.button
-              onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-              animate={{ rotate: isExpanded ? 180 : 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className={cn(
-                "flex h-12 w-12 items-center justify-center border-2 transition-all duration-300",
-                "bg-background border-border hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-95"
-              )}
-            >
-              <ChevronDown className="h-5 w-5" />
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Expanded Details Panel */}
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="overflow-hidden"
-            >
-              <div className="border-t-2 border-border bg-card p-4 md:p-6 pl-6">
-                
-                {/* Embedded Terminal For Key */}
-                <div className="mb-6">
-                  <label className="mb-3 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <Zap className="h-3 w-3" />
-                    Payload_Data
-                  </label>
-                  <div className="flex flex-col md:flex-row items-stretch md:items-center gap-0">
-                    <div
-                      className={cn(
-                        "flex flex-1 items-center justify-between border-2 border-border bg-black p-3 md:border-r-0 transition-all duration-300",
-                        "hover:border-primary/50"
-                      )}
-                    >
-                      <span className="font-mono text-sm tracking-widest text-primary break-all md:truncate">
-                        {isRevealed ? keyData.key_value : "•".repeat(Math.min(keyData.key_value.length, 42))}
-                      </span>
-                    </div>
-                    <div className="flex items-stretch md:w-auto h-12 md:h-auto border-2 border-t-0 md:border-t-2 md:border-l-0 md:border-border mt-0 bg-background">
-                      <motion.button
-                        onClick={handleReveal}
-                        className={cn(
-                          "flex flex-1 whitespace-nowrap px-4 py-3 md:py-3.5 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-300",
-                          "hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        )}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {isRevealed ? "Obfuscate" : "Decrypt"}
-                      </motion.button>
-                      <div className="w-0.5 bg-border my-2 hidden md:block"></div>
-                      <motion.button
-                        onClick={handleCopy}
-                        className={cn(
-                          "flex flex-1 whitespace-nowrap items-center justify-center border-l-2 md:border-l-0 border-border px-4 py-3 md:py-3.5 font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-300",
-                          isCopied ? "bg-valid text-valid-foreground" : "hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        )}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {isCopied ? "Transferred" : "Copy"}
-                      </motion.button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Metadata Console Layout */}
-                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                  <div className="flex flex-col gap-1 border-l-2 border-primary/30 pl-3">
-                    <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3"/> Discovery_Log</span>
-                    <span className="font-mono text-sm font-bold tracking-tight">{formatDate(keyData.created_at)}</span>
-                  </div>
-
-                  {keyData.validated_at && (
-                    <div className="flex flex-col gap-1 border-l-2 border-valid/50 pl-3">
-                      <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-valid"/> Verification_Log</span>
-                      <span className="font-mono text-sm font-bold tracking-tight">{formatDate(keyData.validated_at)}</span>
-                    </div>
-                  )}
-
-                  {keyData.error_count > 0 && (
-                    <div className="flex flex-col gap-1 border-l-2 border-error pl-3">
-                      <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-error flex items-center gap-1"><AlertCircle className="h-3 w-3" /> Error_Count</span>
-                      <span className="font-mono text-sm font-bold text-error">
-                        [ {keyData.error_count} ] INCIDENTS
-                      </span>
-                    </div>
-                  )}
-                  
-                  {keyData.repo_refs && keyData.repo_refs.length > 0 && (
-                    <div className="flex flex-col gap-1 sm:col-span-full border-l-2 border-accent/50 pl-3 mt-2">
-                       <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                          <ExternalLink className="h-3 w-3" /> External_Telemetry
-                        </span>
-                       <div className="font-mono text-sm font-bold tracking-tight text-accent">
-                          {keyData.repo_refs.length} ACTIVE BINDING{keyData.repo_refs.length > 1 ? "S" : ""}
-                       </div>
-                    </div>
-                  )}
-                </div>
-
+            <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
+              <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
+                <Sparkles className={cn("h-3 w-3", provider.text)} />
+                {keyData.error_count} ERRORS
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+          </motion.article>
+        </Dialog.Trigger>
       </motion.div>
-    </motion.div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xl"
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] p-4 focus:outline-none"
+              >
+                <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-zinc-950 p-8 shadow-2xl">
+                  {/* Backdrop Pattern */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                    style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '24px 24px' }} 
+                  />
+
+                  <div className="relative flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-2xl", provider.soft)}>
+                        <Key className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <Dialog.Title className="text-2xl font-black uppercase tracking-tight text-white">
+                          {keyData.provider}
+                        </Dialog.Title>
+                        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+                          Security Identifier Snapshot
+                        </p>
+                      </div>
+                    </div>
+                    <Dialog.Close className="rounded-full p-2 text-zinc-500 hover:bg-white/5 transition-colors">
+                      <X className="h-5 w-5" />
+                    </Dialog.Close>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                          Raw Key Value
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setIsRevealed(!isRevealed)}
+                            className="p-1.5 text-zinc-400 hover:text-white transition-colors"
+                          >
+                            {isRevealed ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleCopy()}
+                            className={cn(
+                              "p-1.5 rounded-md transition-all",
+                              isCopied ? "text-emerald-400" : "text-zinc-400 hover:text-white"
+                            )}
+                          >
+                            {isCopied ? <Check size={16} /> : <Copy size={16} />}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="font-mono text-sm break-all leading-relaxed text-zinc-300 bg-black/40 p-4 rounded-xl border border-white/5">
+                        {isRevealed ? keyData.key_value : "••••••••••••••••••••••••••••••••"}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                        <CalendarClock className="h-4 w-4 text-zinc-500 mb-2" />
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Detected</div>
+                        <div className="text-sm font-medium text-white mt-1">{formatDate(keyData.created_at)}</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                        <ShieldCheck className={cn("h-4 w-4 mb-2", provider.text)} />
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Verified</div>
+                        <div className="text-sm font-medium text-white mt-1">
+                          {keyData.validated_at ? formatDate(keyData.validated_at) : "Pending"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {keyData.repo_refs && keyData.repo_refs.length > 0 && (
+                      <div className="space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                          Source Linkage
+                        </span>
+                        <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                          {keyData.repo_refs.map((ref, i) => (
+                            <a
+                              key={i}
+                              href={ref}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3 hover:bg-white/[0.04] transition-all"
+                            >
+                              <span className="truncate text-xs font-mono text-zinc-400 group-hover:text-zinc-200">{ref}</span>
+                              <ExternalLink size={14} className="text-zinc-600 group-hover:text-white shrink-0 ml-2" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
   );
 }
