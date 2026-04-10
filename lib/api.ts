@@ -98,6 +98,8 @@ export interface Stats {
   pending_keys: number;
   error_keys: number;
   by_provider: Record<string, number>;
+  last_scraped_at?: string;
+  last_validated_at?: string;
 }
 
 export interface StatsResponse {

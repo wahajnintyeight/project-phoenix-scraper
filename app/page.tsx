@@ -179,6 +179,28 @@ export default function KeyScannerPage() {
 
   const providerCount = stats?.by_provider ? Object.keys(stats.by_provider).length : 0;
 
+  const formatTimestamp = (timestamp?: string) => {
+    if (!timestamp) return "Never";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   if (isInitializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -393,31 +415,49 @@ export default function KeyScannerPage() {
           </motion.div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 xl:grid-cols-4">
+        <section className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 xl:grid-cols-6">
           {[
             {
               label: "Total credentials",
               value: stats?.total_keys ?? 0,
               icon: Key,
               accent: "from-primary/20 to-emerald-400/20",
+              type: "number" as const,
             },
             {
               label: "Valid keys",
               value: stats?.valid_keys ?? 0,
               icon: Shield,
               accent: "from-emerald-500/20 to-lime-300/20",
+              type: "number" as const,
             },
             {
               label: "Invalid findings",
               value: stats?.invalid_keys ?? 0,
               icon: AlertTriangle,
               accent: "from-rose-500/20 to-orange-300/20",
+              type: "number" as const,
             },
             {
               label: "Active providers",
               value: providerCount,
               icon: Activity,
               accent: "from-sky-500/20 to-cyan-300/20",
+              type: "number" as const,
+            },
+            {
+              label: "Last validated",
+              value: formatTimestamp(stats?.last_validated_at),
+              icon: Clock,
+              accent: "from-violet-500/20 to-purple-300/20",
+              type: "text" as const,
+            },
+            {
+              label: "Last scraped",
+              value: formatTimestamp(stats?.last_scraped_at),
+              icon: Database,
+              accent: "from-cyan-500/20 to-blue-300/20",
+              type: "text" as const,
             },
           ].map((item, index) => (
             <motion.div
@@ -432,7 +472,10 @@ export default function KeyScannerPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">{item.label}</p>
-                    <div className="mt-3 text-3xl font-semibold tracking-tight tabular-nums">
+                    <div className={cn(
+                      "mt-3 font-semibold tracking-tight",
+                      item.type === "number" ? "text-3xl tabular-nums" : "text-xl"
+                    )}>
                       {item.value}
                     </div>
                   </div>
@@ -457,6 +500,12 @@ export default function KeyScannerPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Browse validated findings, review source paths, and move through paginated results.
               </p>
+              {stats?.last_validated_at && (
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Last validation: {formatTimestamp(stats.last_validated_at)}</span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm shadow-sm">
               <span className="text-muted-foreground">Page</span>
