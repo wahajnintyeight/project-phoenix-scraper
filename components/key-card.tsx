@@ -36,6 +36,11 @@ const statusConfig = {
     label: "Verified",
     className: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   },
+  ValidNoCredits: {
+    icon: AlertCircle,
+    label: "No Credits",
+    className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+  },
   Invalid: {
     icon: XCircle,
     label: "Invalid",
@@ -275,6 +280,36 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                         </div>
                       </div>
                     </div>
+
+                    {keyData.credits && keyData.provider.toLowerCase() === "openrouter" && (
+                      <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Sparkles className="h-4 w-4 text-violet-400" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                            Credit Balance
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">Available</div>
+                            <div className="text-2xl font-bold text-white">
+                              ${keyData.credits.total_credits?.toFixed(2) ?? "0.00"}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-zinc-500 mb-1">Used</div>
+                            <div className="text-2xl font-bold text-zinc-400">
+                              ${keyData.credits.total_usage?.toFixed(2) ?? "0.00"}
+                            </div>
+                          </div>
+                        </div>
+                        {keyData.credits.checked_at && (
+                          <div className="mt-3 pt-3 border-t border-white/5 text-[10px] text-zinc-500">
+                            Last checked: {formatDate(keyData.credits.checked_at)}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {keyData.repo_refs && keyData.repo_refs.length > 0 && (
                       <div className="space-y-3">
