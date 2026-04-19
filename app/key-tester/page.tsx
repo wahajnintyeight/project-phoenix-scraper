@@ -34,18 +34,18 @@ import {
 // ---------------------------------------------------------------------------
 
 interface ModelOverridesProps {
-  selectedProviders: ProviderId[];
+  selectedProvider: ProviderId | null;
   overrides: Record<string, string>;
   onChange: (providerId: string, model: string) => void;
 }
 
-function ModelOverrides({ selectedProviders, overrides, onChange }: ModelOverridesProps) {
+function ModelOverrides({ selectedProvider, overrides, onChange }: ModelOverridesProps) {
   const [open, setOpen] = useState(false);
-  const supportedProviders = selectedProviders.filter(
-    (id) => PROVIDERS.find((p) => p.id === id)?.supportsModel
-  );
+  const provider = selectedProvider
+    ? PROVIDERS.find((p) => p.id === selectedProvider)
+    : undefined;
 
-  if (supportedProviders.length === 0) return null;
+  if (!provider?.supportsModel) return null;
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl">
@@ -69,23 +69,18 @@ function ModelOverrides({ selectedProviders, overrides, onChange }: ModelOverrid
             className="overflow-hidden"
           >
             <div className="grid gap-3 border-t border-border/50 px-4 pb-4 pt-3 sm:grid-cols-2">
-              {supportedProviders.map((id) => {
-                const provider = PROVIDERS.find((p) => p.id === id)!;
-                return (
-                  <div key={id}>
-                    <label className="mb-1.5 block text-xs text-muted-foreground">
-                      {provider.label} model
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={provider.defaultModel}
-                      value={overrides[id] ?? ""}
-                      onChange={(e) => onChange(id, e.target.value)}
-                      className="w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
-                    />
-                  </div>
-                );
-              })}
+                <div>
+                  <label className="mb-1.5 block text-xs text-muted-foreground">
+                    {provider.label} model
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={provider.defaultModel}
+                    value={overrides[provider.id] ?? ""}
+                    onChange={(e) => onChange(provider.id, e.target.value)}
+                    className="w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
             </div>
           </motion.div>
         )}
@@ -104,7 +99,7 @@ export default function KeyTesterPage() {
 
   const [keyValue, setKeyValue] = useState("");
   const [showKey, setShowKey] = useState(false);
-  const [selectedProviders, setSelectedProviders] = useState<ProviderId[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderId | null>(null);
   const [modelOverrides, setModelOverrides] = useState<Record<string, string>>({});
   const [isTesting, setIsTesting] = useState(false);
   const [results, setResults] = useState<TestEntry[]>([]);
@@ -140,54 +135,44 @@ export default function KeyTesterPage() {
       toast.error("Enter an API key first");
       return;
     }
-    if (selectedProviders.length === 0) {
-      toast.error("Select at least one provider");
+    if (!selectedProvider) {
+      toast.error("Select a provider");
       return;
     }
 
     setIsTesting(true);
 
-    // Initialise loading entries
-    const initialEntries: TestEntry[] = selectedProviders.map((provider) => ({
-      provider,
-      model: modelOverrides[provider] ?? PROVIDERS.find((p) => p.id === provider)?.defaultModel ?? "",
+    const providerModel = modelOverrides[selectedProvider] ?? PROVIDERS.find((p) => p.id === selectedProvider)?.defaultModel ?? "";
+
+    // Initialise loading entry
+    const initialEntries: TestEntry[] = [{
+      provider: selectedProvider,
+      model: providerModel,
       status: "loading",
-    }));
+    }];
     setResults(initialEntries);
 
-    toast.info(`Testing key against ${selectedProviders.length} provider(s)…`, {
+    toast.info(`Testing key against ${selectedProvider}…`, {
       icon: <FlaskConical className="h-4 w-4" />,
     });
 
-    // Fire all tests in parallel, update results individually as they resolve
-    await Promise.all(
-      selectedProviders.map(async (provider, idx) => {
-        try {
-          const res = await validateKey(
-            keyValue.trim(),
-            provider,
-            modelOverrides[provider] || undefined
-          );
-          setResults((prev) =>
-            prev.map((entry, i) =>
-              i === idx ? { ...entry, status: "done", result: res.result } : entry
-            )
-          );
-        } catch {
-          setResults((prev) =>
-            prev.map((entry, i) =>
-              i === idx
-                ? {
-                    ...entry,
-                    status: "done",
-                    result: { provider, status: "Error", error: "Request failed" },
-                  }
-                : entry
-            )
-          );
-        }
-      })
-    );
+    try {
+      const res = await validateKey(
+        keyValue.trim(),
+        selectedProvider,
+        modelOverrides[selectedProvider] || undefined
+      );
+      setResults([{ provider: selectedProvider, model: providerModel, status: "done", result: res.result }]);
+    } catch {
+      setResults([
+        {
+          provider: selectedProvider,
+          model: providerModel,
+          status: "done",
+          result: { provider: selectedProvider, status: "Error", error: "Request failed" },
+        },
+      ]);
+    }
 
     setIsTesting(false);
     toast.success("Tests complete");
@@ -196,7 +181,7 @@ export default function KeyTesterPage() {
   const handleReset = () => {
     setResults([]);
     setKeyValue("");
-    setSelectedProviders([]);
+    setSelectedProvider(null);
     setModelOverrides({});
   };
 
@@ -261,7 +246,7 @@ export default function KeyTesterPage() {
   // ---------------------------------------------------------------------------
 
   const hasResults = results.length > 0;
-  const canTest = keyValue.trim() !== "" && selectedProviders.length > 0 && !isTesting;
+  const canTest = keyValue.trim() !== "" && selectedProvider !== null && !isTesting;
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -328,7 +313,7 @@ export default function KeyTesterPage() {
             Test your API keys
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Input a key, choose providers, optionally override models, and validate connectivity in
+            Input a key, choose a provider, optionally override the model, and validate connectivity in
             real time.
           </p>
         </motion.div>
@@ -372,26 +357,21 @@ export default function KeyTesterPage() {
             className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
           >
             <label className="mb-3 block text-xs font-medium text-muted-foreground">
-              Providers{" "}
-              {selectedProviders.length > 0 && (
-                <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">
-                  {selectedProviders.length}
-                </span>
-              )}
+              Provider
             </label>
-            <ProviderSelector selected={selectedProviders} onChange={setSelectedProviders} />
+            <ProviderSelector selected={selectedProvider} onChange={setSelectedProvider} />
           </motion.div>
 
           {/* Model overrides (collapsible) */}
           <AnimatePresence>
-            {selectedProviders.length > 0 && (
+            {selectedProvider && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
               >
                 <ModelOverrides
-                  selectedProviders={selectedProviders}
+                  selectedProvider={selectedProvider}
                   overrides={modelOverrides}
                   onChange={handleModelOverride}
                 />
@@ -420,7 +400,7 @@ export default function KeyTesterPage() {
             ) : (
               <>
                 <Play className="h-4 w-4" />
-                Run tests
+                Run test
               </>
             )}
           </motion.button>

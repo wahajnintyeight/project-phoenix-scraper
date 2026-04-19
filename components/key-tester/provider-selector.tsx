@@ -38,28 +38,22 @@ export const PROVIDERS = [
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
 
 interface ProviderSelectorProps {
-  selected: ProviderId[];
-  onChange: (providers: ProviderId[]) => void;
+  selected: ProviderId | null;
+  onChange: (provider: ProviderId) => void;
 }
 
 export function ProviderSelector({ selected, onChange }: ProviderSelectorProps) {
-  const toggle = (id: ProviderId) => {
-    onChange(
-      selected.includes(id) ? selected.filter((p) => p !== id) : [...selected, id]
-    );
-  };
-
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {PROVIDERS.map((provider, i) => {
-        const isSelected = selected.includes(provider.id);
+        const isSelected = selected === provider.id;
         return (
           <motion.button
             key={provider.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            onClick={() => toggle(provider.id)}
+            onClick={() => onChange(provider.id)}
             className={cn(
               "relative flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium transition-all",
               isSelected
