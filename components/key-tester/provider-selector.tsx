@@ -23,8 +23,8 @@ export const PROVIDERS = [
     id: "Google",
     label: "Google",
     gradient: "from-sky-400 to-blue-600",
-    defaultModel: "",
-    supportsModel: false,
+    defaultModel: "gemini-2.5-flash",
+    supportsModel: true,
   },
   {
     id: "OpenRouter",

@@ -176,6 +176,7 @@ export interface KeyTestResult {
     total_credits?: number;
     total_usage?: number;
   };
+  response?: string;
   error?: string;
 }
 

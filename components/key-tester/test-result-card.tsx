@@ -12,6 +12,7 @@ import {
   CreditCard,
   Cpu,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 
 type TestStatus = "idle" | "loading" | "done";
@@ -158,6 +159,18 @@ export function TestResultCard({ entry }: TestResultCardProps) {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {entry.status === "done" && entry.result?.response && (
+        <div className="border-t border-border/50 px-4 pb-3 pt-3">
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <FileText className="h-3.5 w-3.5" />
+            Provider response
+          </div>
+          <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl border border-border/50 bg-background/60 p-3 text-xs leading-5 text-muted-foreground">
+            {entry.result.response}
+          </pre>
         </div>
       )}
 
