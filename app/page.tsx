@@ -37,7 +37,9 @@ import {
   SunMedium,
   Database,
   LockKeyhole,
+  FlaskConical,
 } from "lucide-react";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { KeyCard } from "@/components/key-card";
 
@@ -295,6 +297,13 @@ export default function KeyScannerPage() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
+            <Link
+              href="/key-tester"
+              className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
+            >
+              <FlaskConical className="h-4 w-4 text-violet-500" />
+              Key Tester
+            </Link>
             <motion.button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -690,29 +699,41 @@ export default function KeyScannerPage() {
         animate={{ y: 0 }}
         className="fixed inset-x-4 bottom-4 z-50 rounded-[28px] border border-border/70 bg-background/85 p-2 shadow-2xl shadow-black/10 backdrop-blur-2xl md:hidden"
       >
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-4 gap-1">
           {[
-            { id: "home", label: "Home", icon: Home },
-            { id: "search", label: "Explore", icon: Search },
-            { id: "settings", label: "Theme", icon: Settings },
-          ].map((item) => (
-            <motion.button
-              key={item.id}
-              onClick={() =>
-                setMobileTab(item.id as "home" | "search" | "settings")
-              }
-              className={cn(
-                "flex flex-col items-center gap-1 rounded-[22px] px-4 py-3 text-xs font-medium transition-colors",
-                mobileTab === item.id
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                  : "text-muted-foreground"
-              )}
-              whileTap={{ scale: 0.97 }}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.label}</span>
-            </motion.button>
-          ))}
+            { id: "home", label: "Home", icon: Home, href: null },
+            { id: "search", label: "Explore", icon: Search, href: null },
+            { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
+            { id: "settings", label: "Theme", icon: Settings, href: null },
+          ].map((item) =>
+            item.href ? (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="flex flex-col items-center gap-1 rounded-[22px] px-2 py-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </Link>
+            ) : (
+              <motion.button
+                key={item.id}
+                onClick={() =>
+                  setMobileTab(item.id as "home" | "search" | "settings")
+                }
+                className={cn(
+                  "flex flex-col items-center gap-1 rounded-[22px] px-2 py-3 text-xs font-medium transition-colors",
+                  mobileTab === item.id
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "text-muted-foreground"
+                )}
+                whileTap={{ scale: 0.97 }}
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.label}</span>
+              </motion.button>
+            )
+          )}
         </div>
       </motion.nav>
 
