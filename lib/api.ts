@@ -166,3 +166,31 @@ export async function deleteQuery(
     method: "DELETE",
   });
 }
+
+// Key Tester
+
+export interface KeyTestResult {
+  provider: string;
+  status: "Valid" | "Invalid" | "ValidNoCredits" | "Error";
+  credits?: {
+    total_credits?: number;
+    total_usage?: number;
+  };
+  error?: string;
+}
+
+export interface KeyTestResponse {
+  code: number;
+  result: KeyTestResult;
+}
+
+export async function validateKey(
+  keyValue: string,
+  provider: string,
+  model?: string
+): Promise<KeyTestResponse> {
+  return authenticatedFetch<KeyTestResponse>("/validate-key", {
+    method: "POST",
+    body: JSON.stringify({ key_value: keyValue, provider, model }),
+  });
+}
