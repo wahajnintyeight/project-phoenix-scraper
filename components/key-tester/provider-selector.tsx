@@ -30,8 +30,8 @@ export const PROVIDERS = [
     id: "OpenRouter",
     label: "OpenRouter",
     gradient: "from-fuchsia-400 to-violet-500",
-    defaultModel: "",
-    supportsModel: false,
+    defaultModel: "openai/gpt-4",
+    supportsModel: true,
   },
 ] as const;
 
