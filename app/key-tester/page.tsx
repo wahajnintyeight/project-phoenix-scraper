@@ -3,7 +3,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
-import { createSession, getSessionId, validateKey } from "@/lib/api";
+import {
+  createSession,
+  fetchOpenRouterModels,
+  getSessionId,
+  validateKey,
+  type OpenRouterModel,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   Flame,
@@ -16,6 +22,10 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  Search,
+  Check,
+  Loader2,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -28,6 +38,15 @@ import {
   TestResultCard,
   TestEntry,
 } from "@/components/key-tester/test-result-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 // ---------------------------------------------------------------------------
 // Model override section – per-provider optional model input
@@ -37,27 +56,57 @@ interface ModelOverridesProps {
   selectedProvider: ProviderId | null;
   overrides: Record<string, string>;
   onChange: (providerId: string, model: string) => void;
+  openRouterModels: OpenRouterModel[];
+  openRouterModelsLoading: boolean;
+  openRouterModelsError: string | null;
 }
 
-function ModelOverrides({ selectedProvider, overrides, onChange }: ModelOverridesProps) {
+function ModelOverrides({
+  selectedProvider,
+  overrides,
+  onChange,
+  openRouterModels,
+  openRouterModelsLoading,
+  openRouterModelsError,
+}: ModelOverridesProps) {
   const [open, setOpen] = useState(false);
   const provider = selectedProvider
     ? PROVIDERS.find((p) => p.id === selectedProvider)
     : undefined;
+  const providerLabel = provider?.label ?? "Model";
+  const providerDefaultModel = provider?.defaultModel ?? "";
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const currentValue = selectedProvider ? overrides[selectedProvider] ?? "" : "";
+  const effectiveValue = currentValue || provider?.defaultModel || "";
+
+  const selectedModel =
+    selectedProvider === "OpenRouter"
+      ? openRouterModels.find((model) => model.id === effectiveValue)
+      : undefined;
 
   if (!provider?.supportsModel) return null;
 
+  const filteredOpenRouterModels = openRouterModels.filter((model) => {
+    const haystack = [model.id, model.name, model.description]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(query.toLowerCase());
+  });
+
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl">
+    <div className="overflow-hidden border-2 border-black bg-white shadow-[4px_4px_0px_0px_#000000]">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="flex w-full items-center justify-between border-b-2 border-black bg-[#F0F0E8] px-4 py-3 text-left transition-transform hover:translate-x-[1px] hover:translate-y-[1px]"
       >
-        <span className="flex items-center gap-2">
+        <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-black">
           <Key className="h-3.5 w-3.5" />
           Custom model overrides (optional)
         </span>
-        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {open ? <ChevronUp className="h-4 w-4 text-black" /> : <ChevronDown className="h-4 w-4 text-black" />}
       </button>
       <AnimatePresence>
         {open && (
@@ -68,19 +117,106 @@ function ModelOverrides({ selectedProvider, overrides, onChange }: ModelOverride
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="grid gap-3 border-t border-border/50 px-4 pb-4 pt-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1.5 block text-xs text-muted-foreground">
-                    {provider.label} model
-                  </label>
+            <div className="grid gap-4 border-t-2 border-black px-4 pb-4 pt-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="block font-mono text-xs uppercase tracking-wider text-black">
+                  {providerLabel} model
+                </label>
+                <div className="flex items-center gap-2 border-2 border-black bg-[#F8F8F0] px-3 py-2 shadow-[2px_2px_0px_0px_#000000]">
                   <input
                     type="text"
-                    placeholder={provider.defaultModel}
-                    value={overrides[provider.id] ?? ""}
+                    placeholder={providerDefaultModel}
+                    value={currentValue}
                     onChange={(e) => onChange(provider.id, e.target.value)}
-                    className="w-full rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-black/40"
                   />
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-black/50">
+                    type exact id
+                  </span>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block font-mono text-xs uppercase tracking-wider text-black">
+                  Quick picker
+                </label>
+                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <button className="flex w-full items-center justify-between border-2 border-black bg-white px-3 py-2 text-left shadow-[2px_2px_0px_0px_#000000] transition-transform hover:translate-x-[1px] hover:translate-y-[1px]">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium text-black">
+                          {selectedModel?.name || effectiveValue || `Choose ${providerLabel} model`}
+                        </div>
+                        <div className="truncate text-xs text-black/60">
+                          {selectedModel?.description || providerDefaultModel}
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-black" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[min(92vw,42rem)] border-2 border-black p-0 shadow-[6px_6px_0px_0px_#000000]">
+                    <Command className="rounded-none">
+                      <CommandInput placeholder="Search models..." value={query} onValueChange={setQuery} />
+                      <CommandList className="max-h-80">
+                        <CommandEmpty>
+                          {openRouterModelsLoading
+                            ? "Loading models..."
+                            : openRouterModelsError || "No models found"}
+                        </CommandEmpty>
+                        <CommandGroup heading="OpenRouter models">
+                          {openRouterModelsLoading ? (
+                            <div className="flex items-center gap-2 px-4 py-6 text-sm text-black/60">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading OpenRouter models...
+                            </div>
+                          ) : filteredOpenRouterModels.length > 0 ? (
+                            filteredOpenRouterModels.map((model) => (
+                              <CommandItem
+                                key={model.id}
+                                value={`${model.id} ${model.name ?? ""} ${model.description ?? ""}`}
+                                onSelect={() => {
+                                  onChange(provider.id, model.id);
+                                  setSearchOpen(false);
+                                }}
+                                className="flex cursor-pointer items-start gap-3 rounded-none px-4 py-3"
+                              >
+                                <div className="mt-0.5 flex h-5 w-5 items-center justify-center border border-black bg-[#F0F0E8]">
+                                  <Check
+                                    className={cn(
+                                      "h-3.5 w-3.5",
+                                      effectiveValue === model.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="truncate font-medium text-black">{model.name || model.id}</span>
+                                    {model.pricing?.prompt === "0" && (
+                                      <span className="border border-black bg-[#F0F0E8] px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-black">
+                                        free
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-1 truncate text-xs text-black/60">{model.id}</div>
+                                  {model.description && (
+                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-black/70">
+                                      {model.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))
+                          ) : (
+                            <div className="px-4 py-6 text-sm text-black/60">
+                              No models match your search.
+                            </div>
+                          )}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </motion.div>
         )}
@@ -101,6 +237,9 @@ export default function KeyTesterPage() {
   const [showKey, setShowKey] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<ProviderId | null>(null);
   const [modelOverrides, setModelOverrides] = useState<Record<string, string>>({});
+  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([]);
+  const [openRouterModelsLoading, setOpenRouterModelsLoading] = useState(false);
+  const [openRouterModelsError, setOpenRouterModelsError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [results, setResults] = useState<TestEntry[]>([]);
 
@@ -130,6 +269,47 @@ export default function KeyTesterPage() {
     setModelOverrides((prev) => ({ ...prev, [providerId]: model }));
   }, []);
 
+  useEffect(() => {
+    if (selectedProvider !== "OpenRouter") {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadModels() {
+      setOpenRouterModelsLoading(true);
+      setOpenRouterModelsError(null);
+
+      try {
+        const response = await fetchOpenRouterModels(keyValue.trim());
+        if (!cancelled) {
+          setOpenRouterModels(response.models);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setOpenRouterModels([]);
+          setOpenRouterModelsError(error instanceof Error ? error.message : "Failed to load models");
+        }
+      } finally {
+        if (!cancelled) {
+          setOpenRouterModelsLoading(false);
+        }
+      }
+    }
+
+    if (keyValue.trim()) {
+      loadModels();
+    } else {
+      setOpenRouterModels([]);
+      setOpenRouterModelsError(null);
+      setOpenRouterModelsLoading(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [keyValue, selectedProvider]);
+
   const handleTest = async () => {
     if (!keyValue.trim()) {
       toast.error("Enter an API key first");
@@ -142,7 +322,10 @@ export default function KeyTesterPage() {
 
     setIsTesting(true);
 
-    const providerModel = modelOverrides[selectedProvider] ?? PROVIDERS.find((p) => p.id === selectedProvider)?.defaultModel ?? "";
+    const providerModel =
+      modelOverrides[selectedProvider] ??
+      PROVIDERS.find((p) => p.id === selectedProvider)?.defaultModel ??
+      "";
 
     // Initialise loading entry
     const initialEntries: TestEntry[] = [{
@@ -157,11 +340,7 @@ export default function KeyTesterPage() {
     });
 
     try {
-      const res = await validateKey(
-        keyValue.trim(),
-        selectedProvider,
-        modelOverrides[selectedProvider] || undefined
-      );
+      const res = await validateKey(keyValue.trim(), selectedProvider, modelOverrides[selectedProvider] || undefined);
       setResults([{ provider: selectedProvider, model: providerModel, status: "done", result: res.result }]);
     } catch {
       setResults([
@@ -374,6 +553,9 @@ export default function KeyTesterPage() {
                   selectedProvider={selectedProvider}
                   overrides={modelOverrides}
                   onChange={handleModelOverride}
+                  openRouterModels={openRouterModels}
+                  openRouterModelsLoading={openRouterModelsLoading}
+                  openRouterModelsError={openRouterModelsError}
                 />
               </motion.div>
             )}

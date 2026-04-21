@@ -195,3 +195,43 @@ export async function validateKey(
     body: JSON.stringify({ key_value: keyValue, provider, model }),
   });
 }
+
+export interface OpenRouterArchitecture {
+  modality?: string;
+  input_modalities?: string[];
+  output_modalities?: string[];
+  tokenizer?: string;
+  instruct_type?: string;
+}
+
+export interface OpenRouterPricing {
+  prompt?: string;
+  completion?: string;
+  request?: string;
+  image?: string;
+}
+
+export interface OpenRouterModel {
+  id: string;
+  name?: string;
+  created?: number;
+  context_length?: number;
+  pricing?: OpenRouterPricing;
+  architecture?: OpenRouterArchitecture;
+  description?: string;
+}
+
+export interface OpenRouterModelsResponse {
+  provider: string;
+  models: OpenRouterModel[];
+  count: number;
+}
+
+export async function fetchOpenRouterModels(apiKey: string): Promise<OpenRouterModelsResponse> {
+  return authenticatedFetch<OpenRouterModelsResponse>(
+    `/validate-key/openrouter-models?api_key=${encodeURIComponent(apiKey)}`,
+    {
+      method: "GET",
+    }
+  );
+}
