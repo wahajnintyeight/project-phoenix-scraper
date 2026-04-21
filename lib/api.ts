@@ -231,7 +231,7 @@ export async function fetchOpenRouterModels(apiKey: string): Promise<OpenRouterM
   return authenticatedFetch<OpenRouterModelsResponse>(
     `/validate-key/openrouter-models?api_key=${encodeURIComponent(apiKey)}`,
     {
-      method: "GET",
+      method: "POST",
     }
   );
 }

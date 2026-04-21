@@ -142,32 +142,40 @@ function ModelOverrides({
                 </label>
                 <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                   <PopoverTrigger asChild>
-                    <button className="flex w-full items-center justify-between border-2 border-black bg-white px-3 py-2 text-left shadow-[2px_2px_0px_0px_#000000] transition-transform hover:translate-x-[1px] hover:translate-y-[1px]">
+                    <button className="flex w-full items-center justify-between border-2 border-black bg-white px-3 py-3 text-left shadow-[2px_2px_0px_0px_#000000] transition-transform hover:translate-x-[1px] hover:translate-y-[1px]">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-black">
-                          {selectedModel?.name || effectiveValue || `Choose ${providerLabel} model`}
+                        <div className="truncate font-mono text-sm font-bold uppercase tracking-tight text-black">
+                          {selectedModel?.name || effectiveValue || `Pick ${providerLabel} Model`}
                         </div>
-                        <div className="truncate text-xs text-black/60">
-                          {selectedModel?.description || providerDefaultModel}
+                        <div className="mt-0.5 truncate font-mono text-[10px] uppercase text-black/50">
+                          {selectedModel?.name ? effectiveValue : (providerDefaultModel || "No model selected")}
                         </div>
                       </div>
                       <ChevronRight className="h-4 w-4 shrink-0 text-black" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[min(92vw,42rem)] border-2 border-black p-0 shadow-[6px_6px_0px_0px_#000000]">
-                    <Command className="rounded-none">
-                      <CommandInput placeholder="Search models..." value={query} onValueChange={setQuery} />
-                      <CommandList className="max-h-80">
-                        <CommandEmpty>
+                  <PopoverContent align="start" className="w-[min(92vw,42rem)] rounded-none border-2 border-black p-0 bg-white shadow-[8px_8px_0px_0px_#000000]">
+                    <Command className="rounded-none bg-white">
+                      <div className="flex items-center border-b-2 border-black bg-[#F0F0E8] px-3">
+                        <Search className="h-4 w-4 shrink-0 text-black opacity-50" />
+                        <CommandInput 
+                          placeholder="Search models by name, ID, or description..." 
+                          value={query} 
+                          onValueChange={setQuery}
+                          className="font-mono text-xs uppercase tracking-tight"
+                        />
+                      </div>
+                      <CommandList className="max-h-80 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent">
+                        <CommandEmpty className="py-10 text-center font-mono text-xs uppercase text-black/40">
                           {openRouterModelsLoading
-                            ? "Loading models..."
-                            : openRouterModelsError || "No models found"}
+                            ? "Fetching models..."
+                            : openRouterModelsError || "No matching models found"}
                         </CommandEmpty>
-                        <CommandGroup heading="OpenRouter models">
+                        <CommandGroup heading={<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/40 px-2">Available Models</span>}>
                           {openRouterModelsLoading ? (
-                            <div className="flex items-center gap-2 px-4 py-6 text-sm text-black/60">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Loading OpenRouter models...
+                            <div className="flex items-center justify-center gap-3 px-4 py-12 text-sm">
+                              <Loader2 className="h-5 w-5 animate-spin text-black" />
+                              <span className="font-mono text-xs uppercase tracking-widest text-black/60">Loading Registry...</span>
                             </div>
                           ) : filteredOpenRouterModels.length > 0 ? (
                             filteredOpenRouterModels.map((model) => (
@@ -178,39 +186,44 @@ function ModelOverrides({
                                   onChange(provider.id, model.id);
                                   setSearchOpen(false);
                                 }}
-                                className="flex cursor-pointer items-start gap-3 rounded-none px-4 py-3"
+                                className="flex cursor-pointer items-start gap-4 border-b border-black/5 px-4 py-4 transition-colors hover:bg-[#F0F0E8] rounded-none aria-selected:bg-[#F0F0E8]"
                               >
-                                <div className="mt-0.5 flex h-5 w-5 items-center justify-center border border-black bg-[#F0F0E8]">
+                                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center border-2 border-black bg-white shadow-[2px_2px_0px_0px_#000000] aria-selected:translate-x-[1px] aria-selected:translate-y-[1px] aria-selected:shadow-none transition-all">
                                   <Check
                                     className={cn(
-                                      "h-3.5 w-3.5",
+                                      "h-4 w-4 text-black",
                                       effectiveValue === model.id ? "opacity-100" : "opacity-0"
                                     )}
                                   />
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="truncate font-medium text-black">{model.name || model.id}</span>
-                                    {model.pricing?.prompt === "0" && (
-                                      <span className="border border-black bg-[#F0F0E8] px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-black">
-                                        free
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="truncate font-mono text-sm font-bold uppercase tracking-tight text-black">
+                                      {model.name || model.id}
+                                    </span>
+                                    <div className="flex gap-1.5 shrink-0">
+                                      {model.pricing?.prompt === "0" && (
+                                        <span className="border-2 border-black bg-[#15803D] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-white shadow-[2px_2px_0px_0px_#000000]">
+                                          FREE
+                                        </span>
+                                      )}
+                                      <span className="border-2 border-black bg-white px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-black shadow-[2px_2px_0px_0px_#000000]">
+                                        {model.architecture?.modality?.split(">")?.[0] || 'TEXT'}
                                       </span>
-                                    )}
+                                    </div>
                                   </div>
-                                  <div className="mt-1 truncate text-xs text-black/60">{model.id}</div>
+                                  <div className="truncate font-mono text-[10px] text-black/40 uppercase tracking-tight">
+                                    {model.id}
+                                  </div>
                                   {model.description && (
-                                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-black/70">
+                                    <div className="line-clamp-2 font-mono text-[10px] leading-relaxed text-black/60 uppercase">
                                       {model.description}
-                                    </p>
+                                    </div>
                                   )}
                                 </div>
                               </CommandItem>
                             ))
-                          ) : (
-                            <div className="px-4 py-6 text-sm text-black/60">
-                              No models match your search.
-                            </div>
-                          )}
+                          ) : null}
                         </CommandGroup>
                       </CommandList>
                     </Command>
