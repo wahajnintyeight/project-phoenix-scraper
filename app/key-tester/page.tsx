@@ -83,12 +83,12 @@ function ModelOverrides({
 
   const selectedModel =
     selectedProvider === "OpenRouter"
-      ? openRouterModels.find((model) => model.id === effectiveValue)
+      ? openRouterModels?.find((model) => model.id === effectiveValue)
       : undefined;
 
   if (!provider?.supportsModel) return null;
 
-  const filteredOpenRouterModels = openRouterModels.filter((model) => {
+  const filteredOpenRouterModels = (openRouterModels || []).filter((model) => {
     const haystack = [model.id, model.name, model.description]
       .filter(Boolean)
       .join(" ")
@@ -97,16 +97,16 @@ function ModelOverrides({
   });
 
   return (
-    <div className="overflow-hidden border-2 border-black bg-white shadow-[4px_4px_0px_0px_#000000]">
+    <div className="overflow-hidden rounded-[24px] border border-white/10 bg-card/40 shadow-xl backdrop-blur-md transition-all hover:bg-card/60">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between border-b-2 border-black bg-[#F0F0E8] px-4 py-3 text-left transition-transform hover:translate-x-[1px] hover:translate-y-[1px]"
+        className="flex w-full items-center justify-between border-b border-white/5 bg-white/5 px-4 py-3 text-left transition-all hover:bg-white/10"
       >
-        <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-black">
-          <Key className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <Key className="h-3.5 w-3.5 text-primary" />
           Custom model overrides (optional)
         </span>
-        {open ? <ChevronUp className="h-4 w-4 text-black" /> : <ChevronDown className="h-4 w-4 text-black" />}
+        {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
       <AnimatePresence>
         {open && (
@@ -114,68 +114,68 @@ function ModelOverrides({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.3, ease: [0.19, 1, 0.22, 1] }}
             className="overflow-hidden"
           >
-            <div className="grid gap-4 border-t-2 border-black px-4 pb-4 pt-4 sm:grid-cols-2">
+            <div className="grid gap-4 border-t border-white/5 px-4 pb-4 pt-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="block font-mono text-xs uppercase tracking-wider text-black">
+                <label className="block font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                   {providerLabel} model
                 </label>
-                <div className="flex items-center gap-2 border-2 border-black bg-[#F8F8F0] px-3 py-2 shadow-[2px_2px_0px_0px_#000000]">
+                <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 transition-all focus-within:border-primary/50">
                   <input
                     type="text"
                     placeholder={providerDefaultModel}
                     value={currentValue}
                     onChange={(e) => onChange(provider.id, e.target.value)}
-                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-black/40"
+                    className="min-w-0 flex-1 bg-transparent font-mono text-sm text-foreground outline-none placeholder:text-muted-foreground/30"
                   />
-                  <span className="font-mono text-[10px] uppercase tracking-widest text-black/50">
-                    type exact id
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/40">
+                    ID
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="block font-mono text-xs uppercase tracking-wider text-black">
+                <label className="block font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
                   Quick picker
                 </label>
                 <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                   <PopoverTrigger asChild>
-                    <button className="flex w-full items-center justify-between border-2 border-black bg-white px-3 py-3 text-left shadow-[2px_2px_0px_0px_#000000] transition-transform hover:translate-x-[1px] hover:translate-y-[1px]">
+                    <button className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left transition-all hover:bg-white/10 hover:border-white/20">
                       <div className="min-w-0">
-                        <div className="truncate font-mono text-sm font-bold uppercase tracking-tight text-black">
+                        <div className="truncate font-mono text-sm font-bold uppercase tracking-tight text-foreground">
                           {selectedModel?.name || effectiveValue || `Pick ${providerLabel} Model`}
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[10px] uppercase text-black/50">
+                        <div className="mt-0.5 truncate font-mono text-[10px] uppercase text-muted-foreground/60">
                           {selectedModel?.name ? effectiveValue : (providerDefaultModel || "No model selected")}
                         </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-black" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="start" className="w-[min(92vw,42rem)] rounded-none border-2 border-black p-0 bg-white shadow-[8px_8px_0px_0px_#000000]">
-                    <Command className="rounded-none bg-white">
-                      <div className="flex items-center border-b-2 border-black bg-[#F0F0E8] px-3">
-                        <Search className="h-4 w-4 shrink-0 text-black opacity-50" />
+                  <PopoverContent align="start" className="w-[min(92vw,42rem)] overflow-hidden rounded-[24px] border border-white/10 p-0 bg-card/95 shadow-2xl backdrop-blur-xl">
+                    <Command className="rounded-none bg-transparent">
+                      <div className="flex items-center border-b border-white/10 bg-white/5 px-3">
+                        <Search className="h-4 w-4 shrink-0 text-muted-foreground opacity-50" />
                         <CommandInput 
-                          placeholder="Search models by name, ID, or description..." 
+                          placeholder="Search models..." 
                           value={query} 
                           onValueChange={setQuery}
-                          className="font-mono text-xs uppercase tracking-tight"
+                          className="font-mono text-xs uppercase tracking-tight text-foreground"
                         />
                       </div>
-                      <CommandList className="max-h-80 scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent">
-                        <CommandEmpty className="py-10 text-center font-mono text-xs uppercase text-black/40">
+                      <CommandList className="max-h-80 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                        <CommandEmpty className="py-10 text-center font-mono text-xs uppercase text-muted-foreground/40">
                           {openRouterModelsLoading
                             ? "Fetching models..."
-                            : openRouterModelsError || "No matching models found"}
+                            : openRouterModelsError || "No results found"}
                         </CommandEmpty>
-                        <CommandGroup heading={<span className="font-mono text-[10px] uppercase tracking-[0.2em] text-black/40 px-2">Available Models</span>}>
+                        <CommandGroup heading={<span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/40 px-2">Available Models</span>}>
                           {openRouterModelsLoading ? (
-                            <div className="flex items-center justify-center gap-3 px-4 py-12 text-sm">
-                              <Loader2 className="h-5 w-5 animate-spin text-black" />
-                              <span className="font-mono text-xs uppercase tracking-widest text-black/60">Loading Registry...</span>
+                            <div className="flex flex-col items-center justify-center gap-3 px-4 py-12 text-sm">
+                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground/60">Loading Registry...</span>
                             </div>
                           ) : filteredOpenRouterModels.length > 0 ? (
                             filteredOpenRouterModels.map((model) => (
@@ -186,37 +186,40 @@ function ModelOverrides({
                                   onChange(provider.id, model.id);
                                   setSearchOpen(false);
                                 }}
-                                className="flex cursor-pointer items-start gap-4 border-b border-black/5 px-4 py-4 transition-colors hover:bg-[#F0F0E8] rounded-none aria-selected:bg-[#F0F0E8]"
+                                className="flex cursor-pointer items-start gap-4 border-b border-white/5 px-4 py-4 transition-all hover:bg-white/5 aria-selected:bg-white/5"
                               >
-                                <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center border-2 border-black bg-white shadow-[2px_2px_0px_0px_#000000] aria-selected:translate-x-[1px] aria-selected:translate-y-[1px] aria-selected:shadow-none transition-all">
+                                <div className={cn(
+                                  "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 transition-all",
+                                  effectiveValue === model.id ? "border-primary/50 bg-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.2)]" : "shadow-none"
+                                )}>
                                   <Check
                                     className={cn(
-                                      "h-4 w-4 text-black",
-                                      effectiveValue === model.id ? "opacity-100" : "opacity-0"
+                                      "h-3.5 w-3.5 text-primary transition-all",
+                                      effectiveValue === model.id ? "scale-100 opacity-100" : "scale-0 opacity-0"
                                     )}
                                   />
                                 </div>
-                                <div className="min-w-0 flex-1 space-y-1">
+                                <div className="min-w-0 flex-1 space-y-1.5">
                                   <div className="flex items-center justify-between gap-2">
-                                    <span className="truncate font-mono text-sm font-bold uppercase tracking-tight text-black">
+                                    <span className="truncate font-mono text-sm font-bold uppercase tracking-tight text-foreground">
                                       {model.name || model.id}
                                     </span>
                                     <div className="flex gap-1.5 shrink-0">
                                       {model.pricing?.prompt === "0" && (
-                                        <span className="border-2 border-black bg-[#15803D] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-white shadow-[2px_2px_0px_0px_#000000]">
+                                        <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-emerald-400">
                                           FREE
                                         </span>
                                       )}
-                                      <span className="border-2 border-black bg-white px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-black shadow-[2px_2px_0px_0px_#000000]">
+                                      <span className="rounded-full bg-white/5 border border-white/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-tighter text-muted-foreground">
                                         {model.architecture?.modality?.split(">")?.[0] || 'TEXT'}
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="truncate font-mono text-[10px] text-black/40 uppercase tracking-tight">
+                                  <div className="truncate font-mono text-[10px] text-muted-foreground/40 uppercase tracking-tight">
                                     {model.id}
                                   </div>
                                   {model.description && (
-                                    <div className="line-clamp-2 font-mono text-[10px] leading-relaxed text-black/60 uppercase">
+                                    <div className="line-clamp-2 font-mono text-[10px] leading-relaxed text-muted-foreground/60 uppercase">
                                       {model.description}
                                     </div>
                                   )}
