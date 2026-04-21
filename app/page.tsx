@@ -189,6 +189,13 @@ export default function KeyScannerPage() {
   };
 
   const providerCount = stats?.by_provider ? Object.keys(stats.by_provider).length : 0;
+  const providerValidCounts = keys.reduce<Record<string, number>>((counts, key) => {
+    if (key.status === "Valid" || key.status === "ValidNoCredits") {
+      const provider = key.provider || "unknown";
+      counts[provider] = (counts[provider] || 0) + 1;
+    }
+    return counts;
+  }, {});
 
   const formatTimestamp = (timestamp?: string) => {
     if (!timestamp) return "Never";
@@ -350,7 +357,7 @@ export default function KeyScannerPage() {
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/70 px-5 py-3 text-sm font-medium text-foreground">
                   <Database className="h-4 w-4 text-primary" />
-                  {stats?.total_keys ?? 0} indexed credentials
+                  {stats?.valid_keys ?? 0} valid credentials
                 </div>
               </div>
 
@@ -557,7 +564,7 @@ export default function KeyScannerPage() {
                         ? "bg-primary-foreground/20 text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     )}>
-                      {count}
+                      {providerValidCounts[provider] ?? 0}
                     </span>
                   </motion.button>
                 ))}
