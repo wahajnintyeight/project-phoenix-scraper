@@ -228,10 +228,15 @@ export interface OpenRouterModelsResponse {
 }
 
 export async function fetchOpenRouterModels(apiKey: string): Promise<OpenRouterModelsResponse> {
-  return authenticatedFetch<OpenRouterModelsResponse>(
+  const response = await authenticatedFetch<{
+    code: number;
+    result: OpenRouterModelsResponse;
+  }>(
     `/validate-key/openrouter-models?api_key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
     }
   );
+
+  return response.result;
 }

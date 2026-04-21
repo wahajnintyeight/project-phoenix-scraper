@@ -80,9 +80,10 @@ function ModelOverrides({
 
   const currentValue = selectedProvider ? overrides[selectedProvider] ?? "" : "";
   const effectiveValue = currentValue || provider?.defaultModel || "";
+  const isOpenRouter = selectedProvider?.toLowerCase() === "openrouter";
 
   const selectedModel =
-    selectedProvider === "OpenRouter"
+    isOpenRouter
       ? openRouterModels?.find((model) => model.id === effectiveValue)
       : undefined;
 
@@ -103,7 +104,7 @@ function ModelOverrides({
         className="flex w-full items-center justify-between border-b border-white/5 bg-white/5 px-4 py-3 text-left transition-all hover:bg-white/10"
       >
         <span className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          <Key className="h-3.5 w-3.5 text-primary" />
+          <Key className={cn("h-3.5 w-3.5", isOpenRouter ? "text-fuchsia-400" : "text-primary")} />
           Custom model overrides (optional)
         </span>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
