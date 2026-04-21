@@ -47,6 +47,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CurlPlayground } from "@/components/key-tester/curl-playground";
 
 // ---------------------------------------------------------------------------
 // Model override section – per-provider optional model input
@@ -249,6 +251,7 @@ function ModelOverrides({
 export default function KeyTesterPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"key" | "curl">("key");
 
   const [keyValue, setKeyValue] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -379,6 +382,9 @@ export default function KeyTesterPage() {
     setKeyValue("");
     setSelectedProvider(null);
     setModelOverrides({});
+    setOpenRouterModels([]);
+    setOpenRouterModelsError(null);
+    setOpenRouterModelsLoading(false);
   };
 
   // ---------------------------------------------------------------------------
@@ -509,120 +515,131 @@ export default function KeyTesterPage() {
             Test your API keys
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Input a key, choose a provider, optionally override the model, and validate connectivity in
-            real time.
+            Switch between direct key validation and a restricted browser curl replay for supported AI providers.
           </p>
         </motion.div>
 
-        <div className="space-y-4">
-          {/* Key input */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
-          >
-            <label className="mb-2 block text-xs font-medium text-muted-foreground">
-              API Key
-            </label>
-            <div className="relative">
-              <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type={showKey ? "text" : "password"}
-                value={keyValue}
-                onChange={(e) => setKeyValue(e.target.value)}
-                placeholder="sk-… or any API key"
-                onKeyDown={(e) => { if (e.key === "Enter") e.stopPropagation(); }}
-                className="w-full rounded-2xl border border-border/60 bg-background/60 py-3 pl-10 pr-12 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </motion.div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "key" | "curl")} className="space-y-5">
+          <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl border border-border/70 bg-card/70 p-1 shadow-sm backdrop-blur-xl">
+            <TabsTrigger value="key" className="rounded-xl py-2.5 text-sm font-medium">
+              Key tester
+            </TabsTrigger>
+            <TabsTrigger value="curl" className="rounded-xl py-2.5 text-sm font-medium">
+              Curl replay
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Provider selector */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
-          >
-            <label className="mb-3 block text-xs font-medium text-muted-foreground">
-              Provider
-            </label>
-            <ProviderSelector selected={selectedProvider} onChange={setSelectedProvider} />
-          </motion.div>
-
-          {/* Model overrides (collapsible) */}
-          <AnimatePresence>
-            {selectedProvider && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-              >
-                <ModelOverrides
-                  selectedProvider={selectedProvider}
-                  overrides={modelOverrides}
-                  onChange={handleModelOverride}
-                  openRouterModels={openRouterModels}
-                  openRouterModelsLoading={openRouterModelsLoading}
-                  openRouterModelsError={openRouterModelsError}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Test button */}
-          <motion.button
-            onClick={handleTest}
-            disabled={!canTest}
-            className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold shadow-lg transition-all",
-              canTest
-                ? "bg-primary text-primary-foreground shadow-primary/20 hover:opacity-90"
-                : "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
-            )}
-            whileHover={canTest ? { y: -1 } : {}}
-            whileTap={canTest ? { scale: 0.98 } : {}}
-          >
-            {isTesting ? (
-              <>
-                <FlaskConical className="h-4 w-4 animate-pulse" />
-                Running tests…
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4" />
-                Run test
-              </>
-            )}
-          </motion.button>
-
-          {/* Results */}
-          <AnimatePresence>
-            {hasResults && (
+          <TabsContent value="key" className="space-y-4">
+            <div className="space-y-4">
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="space-y-3 pt-2"
+                transition={{ delay: 0.05 }}
+                className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
               >
-                <p className="text-xs font-medium text-muted-foreground">
-                  Results ({results.filter((r) => r.status === "done").length}/{results.length})
-                </p>
-                {results.map((entry, i) => (
-                  <TestResultCard key={`${entry.provider}-${i}`} entry={entry} />
-                ))}
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">
+                  API Key
+                </label>
+                <div className="relative">
+                  <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type={showKey ? "text" : "password"}
+                    value={keyValue}
+                    onChange={(e) => setKeyValue(e.target.value)}
+                    placeholder="sk-… or any API key"
+                    onKeyDown={(e) => { if (e.key === "Enter") e.stopPropagation(); }}
+                    className="w-full rounded-2xl border border-border/60 bg-background/60 py-3 pl-10 pr-12 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
+              >
+                <label className="mb-3 block text-xs font-medium text-muted-foreground">
+                  Provider
+                </label>
+                <ProviderSelector selected={selectedProvider} onChange={setSelectedProvider} />
+              </motion.div>
+
+              <AnimatePresence>
+                {selectedProvider && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                  >
+                    <ModelOverrides
+                      selectedProvider={selectedProvider}
+                      overrides={modelOverrides}
+                      onChange={handleModelOverride}
+                      openRouterModels={openRouterModels}
+                      openRouterModelsLoading={openRouterModelsLoading}
+                      openRouterModelsError={openRouterModelsError}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.button
+                onClick={handleTest}
+                disabled={!canTest}
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold shadow-lg transition-all",
+                  canTest
+                    ? "bg-primary text-primary-foreground shadow-primary/20 hover:opacity-90"
+                    : "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
+                )}
+                whileHover={canTest ? { y: -1 } : {}}
+                whileTap={canTest ? { scale: 0.98 } : {}}
+              >
+                {isTesting ? (
+                  <>
+                    <FlaskConical className="h-4 w-4 animate-pulse" />
+                    Running tests…
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Run test
+                  </>
+                )}
+              </motion.button>
+
+              <AnimatePresence>
+                {hasResults && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-3 pt-2"
+                  >
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Results ({results.filter((r) => r.status === "done").length}/{results.length})
+                    </p>
+                    {results.map((entry, i) => (
+                      <TestResultCard key={`${entry.provider}-${i}`} entry={entry} />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="curl">
+            <CurlPlayground />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Toaster position="top-center" richColors />
