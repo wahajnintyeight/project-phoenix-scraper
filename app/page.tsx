@@ -189,13 +189,6 @@ export default function KeyScannerPage() {
   };
 
   const providerCount = stats?.by_provider ? Object.keys(stats.by_provider).length : 0;
-  const providerValidCounts = keys.reduce<Record<string, number>>((counts, key) => {
-    if (key.status === "Valid" || key.status === "ValidNoCredits") {
-      const provider = key.provider || "unknown";
-      counts[provider] = (counts[provider] || 0) + 1;
-    }
-    return counts;
-  }, {});
 
   const formatTimestamp = (timestamp?: string) => {
     if (!timestamp) return "Never";
@@ -564,7 +557,7 @@ export default function KeyScannerPage() {
                         ? "bg-primary-foreground/20 text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     )}>
-                      {providerValidCounts[provider] ?? 0}
+                      {count}
                     </span>
                   </motion.button>
                 ))}
