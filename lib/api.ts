@@ -61,7 +61,7 @@ export interface ApiKey {
   provider: string;
   status: "Valid" | "Invalid" | "Pending" | "Error" | "ValidNoCredits";
   created_at: string;
-  validated_at?: string;
+  validated_at: string;
   last_seen_at?: string;
   error_count: number;
   repo_refs?: string[];

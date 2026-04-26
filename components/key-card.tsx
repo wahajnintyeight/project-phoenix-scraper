@@ -179,7 +179,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                 {keyData.provider}
               </h3>
               <p className="text-xs text-muted-foreground/80">
-                Created {formatDate(keyData.created_at)}
+                Verified at {formatDate(keyData?.validated_at)}
               </p>
             </div>
 
@@ -270,7 +270,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                       <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
                         <CalendarClock className="h-4 w-4 text-zinc-500 mb-2" />
                         <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Detected</div>
-                        <div className="text-sm font-medium text-white mt-1">{formatDate(keyData.created_at)}</div>
+                        <div className="text-sm font-medium text-white mt-1">{formatDate(keyData.validated_at)}</div>
                       </div>
                       <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
                         <ShieldCheck className={cn("h-4 w-4 mb-2", provider.text)} />
