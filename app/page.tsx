@@ -164,6 +164,7 @@ export default function KeyScannerPage() {
       anthropic: "from-orange-400 to-amber-500",
       google: "from-sky-400 to-blue-600",
       openrouter: "from-fuchsia-400 to-violet-500",
+      moonshot: "from-indigo-400 to-purple-600",
       github: "from-slate-400 to-slate-600",
       stripe: "from-violet-400 to-indigo-600",
     };

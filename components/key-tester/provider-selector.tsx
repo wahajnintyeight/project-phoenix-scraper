@@ -9,7 +9,7 @@ export const PROVIDERS = [
     id: "OpenAI",
     label: "OpenAI",
     gradient: "from-emerald-400 to-emerald-600",
-    defaultModel: "gpt-4o-mini",
+    defaultModel: "gpt-5",
     supportsModel: true,
   },
   {
@@ -30,7 +30,14 @@ export const PROVIDERS = [
     id: "OpenRouter",
     label: "OpenRouter",
     gradient: "from-fuchsia-400 to-violet-500",
-    defaultModel: "openai/gpt-4",
+    defaultModel: "openrouter/free",
+    supportsModel: true,
+  },
+  {
+    id: "Moonshot",
+    label: "Moonshot",
+    gradient: "from-indigo-400 to-purple-600",
+    defaultModel: "kimi-k2-0905-preview",
     supportsModel: true,
   },
 ] as const;
@@ -44,7 +51,7 @@ interface ProviderSelectorProps {
 
 export function ProviderSelector({ selected, onChange }: ProviderSelectorProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
       {PROVIDERS.map((provider, i) => {
         const isSelected = selected === provider.id;
         return (

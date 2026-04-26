@@ -86,6 +86,12 @@ const providerConfig: Record<
     soft: "bg-violet-600/10 text-violet-700 dark:text-violet-300",
     text: "text-violet-600",
   },
+  moonshot: {
+    primary: "bg-purple-600",
+    glow: "shadow-purple-600/20",
+    soft: "bg-purple-600/10 text-purple-700 dark:text-purple-300",
+    text: "text-purple-600",
+  },
   github: {
     primary: "bg-slate-700",
     glow: "shadow-slate-700/20",
