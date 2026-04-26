@@ -54,6 +54,7 @@ export default function KeyScannerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<"home" | "search" | "settings">("home");
 
   useEffect(() => {
@@ -78,11 +79,14 @@ export default function KeyScannerPage() {
     init();
   }, []);
 
-  const loadData = useCallback(async (page: number = 1, provider: string | null = null) => {
+  const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null) => {
     if (!getSessionId()) return;
     setIsLoadingKeys(true);
     try {
-      const [statsRes, keysRes] = await Promise.all([fetchStats(), fetchKeys(page, provider || undefined)]);
+      const [statsRes, keysRes] = await Promise.all([
+        fetchStats(), 
+        fetchKeys(page, provider || undefined, status || undefined)
+      ]);
 
       if (statsRes.code === 1009) {
         setStats(statsRes.result);
@@ -101,16 +105,16 @@ export default function KeyScannerPage() {
 
   useEffect(() => {
     if (!isInitializing && !error) {
-      loadData(currentPage, selectedProvider);
+      loadData(currentPage, selectedProvider, selectedStatus);
     }
-  }, [isInitializing, error, loadData, currentPage, selectedProvider]);
+  }, [isInitializing, error, loadData, currentPage, selectedProvider, selectedStatus]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     toast.info("Refreshing live feed...", {
       icon: <RefreshCw className="h-4 w-4 animate-spin" />,
     });
-    await loadData(currentPage, selectedProvider);
+    await loadData(currentPage, selectedProvider, selectedStatus);
     setIsRefreshing(false);
     toast.success("Dashboard updated", {
       icon: <Sparkles className="h-4 w-4" />,
@@ -142,6 +146,15 @@ export default function KeyScannerPage() {
     setCurrentPage(1); // Reset to first page when filtering
     toast.info(provider ? `Filtering by ${provider}` : "Showing all providers", {
       icon: <Search className="h-4 w-4" />,
+    });
+  };
+
+  const handleStatusFilter = (status: string | null) => {
+    setSelectedStatus(status);
+    setCurrentPage(1); // Reset to first page when filtering
+    const statusLabel = status === "Valid" ? "Valid keys" : status === "ValidNoCredits" ? "Valid (No Credits)" : "All statuses";
+    toast.info(status ? `Filtering by ${statusLabel}` : "Showing all statuses", {
+      icon: <Shield className="h-4 w-4" />,
     });
   };
 
@@ -564,6 +577,53 @@ export default function KeyScannerPage() {
             </div>
           </section>
         )}
+
+        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
+                Filter by status
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Filter keys by validation status
+              </p>
+            </div>
+            {selectedStatus && (
+              <motion.button
+                onClick={() => handleStatusFilter(null)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Clear filter
+              </motion.button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { status: "Valid", label: "Valid", icon: Shield, color: "from-emerald-400 to-emerald-600" },
+              { status: "ValidNoCredits", label: "Valid (No Credits)", icon: AlertTriangle, color: "from-amber-400 to-amber-600" },
+            ].map(({ status, label, icon: Icon, color }) => (
+              <motion.button
+                key={status}
+                onClick={() => handleStatusFilter(selectedStatus === status ? null : status)}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
+                  selectedStatus === status
+                    ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                    : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
+                )}
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </motion.button>
+            ))}
+          </div>
+        </section>
 
         <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
           <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
