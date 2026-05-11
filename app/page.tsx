@@ -8,8 +8,10 @@ import {
   getSessionId,
   fetchStats,
   fetchKeys,
+  fetchVisits,
   Stats,
   ApiKey,
+  Visit,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -48,7 +50,9 @@ export default function KeyScannerPage() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [visits, setVisits] = useState<Visit[]>([]);
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
+  const [isLoadingVisits, setIsLoadingVisits] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,11 +107,27 @@ export default function KeyScannerPage() {
     }
   }, []);
 
+  const loadVisits = useCallback(async (page: number = 1, project: string = "phoenix-scraper") => {
+    if (!getSessionId()) return;
+    setIsLoadingVisits(true);
+    try {
+      const res = await fetchVisits(page, project);
+      if (res.code === 1094) {
+        setVisits(res.result.visits);
+      }
+    } catch (err) {
+      console.error("Failed to fetch visits:", err);
+    } finally {
+      setIsLoadingVisits(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!isInitializing && !error) {
       loadData(currentPage, selectedProvider, selectedStatus);
+      loadVisits();
     }
-  }, [isInitializing, error, loadData, currentPage, selectedProvider, selectedStatus]);
+  }, [isInitializing, error, loadData, loadVisits, currentPage, selectedProvider, selectedStatus]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -578,6 +598,38 @@ export default function KeyScannerPage() {
             </div>
           </section>
         )}
+
+        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
+            <div className="mb-4">
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
+                Recent Visits (phoenix-scraper)
+              </p>
+            </div>
+            <div className="space-y-2">
+              {isLoadingVisits ? (
+                <div className="animate-pulse h-10 bg-muted rounded-2xl" />
+              ) : visits.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No recent visits</p>
+              ) : (
+                visits.map((visit) => (
+                  <div key={visit.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {visit.country_code}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{visit.country}</p>
+                        <p className="text-xs text-muted-foreground">{visit.ip}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {new Date(visit.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+        </section>
 
         <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
           <div className="mb-4 flex items-center justify-between">

@@ -5,6 +5,9 @@ let sessionId: string | null = null;
 export async function createSession(): Promise<string> {
   const res = await fetch(`${API_BASE}/createSession`, {
     method: "PUT",
+    headers: {
+      "project-type": "phoenix-scraper",
+    },
   });
   const data = await res.json();
   if (data.code === 1007 && data.result) {
@@ -12,6 +15,34 @@ export async function createSession(): Promise<string> {
     return data.result;
   }
   throw new Error(data.message || "Failed to create session");
+}
+
+export interface Visit {
+  id: string;
+  ip: string;
+  country: string;
+  country_code: string;
+  project_type: string;
+  created_at: string;
+}
+
+export interface VisitsResponse {
+  code: number;
+  message: string;
+  result: {
+    visits: Visit[];
+    current_page: number;
+    total_pages: number;
+  };
+}
+
+export async function fetchVisits(
+  page = 1,
+  project?: string
+): Promise<VisitsResponse> {
+  const params = new URLSearchParams({ page: page.toString() });
+  if (project) params.set("project", project);
+  return authenticatedFetch<VisitsResponse>(`/visits?${params.toString()}`);
 }
 
 export function getSessionId(): string | null {
