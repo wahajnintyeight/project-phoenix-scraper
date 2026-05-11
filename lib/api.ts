@@ -1,8 +1,37 @@
 const API_BASE = "https://api.theprojectphoenix.top/v2/api";
+const SESSION_KEY = "phoenix_session";
+const SESSION_TTL = 60 * 60 * 1000; // 1 hour
 
-let sessionId: string | null = null;
+function getCachedSession(): string | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const { id, ts } = JSON.parse(raw);
+    if (Date.now() - ts > SESSION_TTL) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedSession(id: string) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ id, ts: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+let sessionId: string | null = getCachedSession();
 
 export async function createSession(): Promise<string> {
+  const cached = getCachedSession();
+  if (cached) {
+    sessionId = cached;
+    return cached;
+  }
+
   const res = await fetch(`${API_BASE}/createSession`, {
     method: "PUT",
     headers: {
@@ -12,6 +41,42 @@ export async function createSession(): Promise<string> {
   const data = await res.json();
   if (data.code === 1007 && data.result) {
     sessionId = data.result;
+    setCachedSession(data.result);
+    return data.result;
+  }
+  throw new Error(data.message || "Failed to create session");
+}
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedSession(id: string) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ id, ts: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+let sessionId: string | null = getCachedSession();
+
+export async function createSession(): Promise<string> {
+  const cached = getCachedSession();
+  if (cached) {
+    sessionId = cached;
+    return cached;
+  }
+
+  const res = await fetch(`${API_BASE}/createSession`, {
+    method: "PUT",
+    headers: {
+      "project-type": "phoenix-scraper",
+    },
+  });
+  const data = await res.json();
+  if (data.code === 1007 && data.result) {
+    sessionId = data.result;
+    setCachedSession(data.result);
     return data.result;
   }
   throw new Error(data.message || "Failed to create session");
@@ -51,6 +116,7 @@ export function getSessionId(): string | null {
 
 export function setSessionId(id: string) {
   sessionId = id;
+  setCachedSession(id);
 }
 
 async function authenticatedFetch<T>(
