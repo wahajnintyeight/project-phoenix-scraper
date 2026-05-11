@@ -2,7 +2,10 @@ const API_BASE = "https://api.theprojectphoenix.top/v2/api";
 const SESSION_KEY = "phoenix_session";
 const SESSION_TTL = 60 * 60 * 1000; // 1 hour
 
+let sessionId: string | null = null;
+
 function getCachedSession(): string | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
@@ -18,47 +21,25 @@ function getCachedSession(): string | null {
 }
 
 function setCachedSession(id: string) {
+  if (typeof window === "undefined") return;
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify({ id, ts: Date.now() }));
   } catch { /* ignore */ }
 }
 
-let sessionId: string | null = getCachedSession();
-
-export async function createSession(): Promise<string> {
+export function getSessionId(): string | null {
   const cached = getCachedSession();
   if (cached) {
     sessionId = cached;
     return cached;
   }
-
-  const res = await fetch(`${API_BASE}/createSession`, {
-    method: "PUT",
-    headers: {
-      "project-type": "phoenix-scraper",
-    },
-  });
-  const data = await res.json();
-  if (data.code === 1007 && data.result) {
-    sessionId = data.result;
-    setCachedSession(data.result);
-    return data.result;
-  }
-  throw new Error(data.message || "Failed to create session");
-}
-    return id;
-  } catch {
-    return null;
-  }
+  return sessionId;
 }
 
-function setCachedSession(id: string) {
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ id, ts: Date.now() }));
-  } catch { /* ignore */ }
+export function setSessionId(id: string) {
+  sessionId = id;
+  setCachedSession(id);
 }
-
-let sessionId: string | null = getCachedSession();
 
 export async function createSession(): Promise<string> {
   const cached = getCachedSession();
@@ -110,20 +91,11 @@ export async function fetchVisits(
   return authenticatedFetch<VisitsResponse>(`/visits?${params.toString()}`);
 }
 
-export function getSessionId(): string | null {
-  return sessionId;
-}
-
-export function setSessionId(id: string) {
-  sessionId = id;
-  setCachedSession(id);
-}
-
 async function authenticatedFetch<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  if (!sessionId) {
+  if (!getSessionId()) {
     await createSession();
   }
 
@@ -131,7 +103,7 @@ async function authenticatedFetch<T>(
     ...options,
     headers: {
       "Content-Type": "application/json",
-      sessionId: sessionId!,
+      sessionId: getSessionId()!,
       ...options.headers,
     },
   });
@@ -140,7 +112,6 @@ async function authenticatedFetch<T>(
   return data;
 }
 
-// Types
 export interface Reference {
   id: string;
   api_key_id: string;
@@ -221,7 +192,6 @@ export interface QueriesResponse {
   };
 }
 
-// API Functions
 export async function fetchKeys(
   page = 1,
   provider?: string,
@@ -263,8 +233,6 @@ export async function deleteQuery(
     method: "DELETE",
   });
 }
-
-// Key Tester
 
 export interface KeyTestResult {
   provider: string;
