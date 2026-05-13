@@ -38,6 +38,7 @@ import {
   Home,
   Search,
   Settings,
+  Download,
   ArrowRight,
   MoonStar,
   SunMedium,
