@@ -48,11 +48,16 @@ export async function createSession(): Promise<string> {
     return cached;
   }
 
+  const headers: Record<string, string> = {
+    "project-type": "phoenix-scraper",
+  };
+  if (typeof navigator !== "undefined") {
+    headers["user-agent"] = navigator.userAgent;
+  }
+
   const res = await fetch(`${API_BASE}/createSession`, {
     method: "PUT",
-    headers: {
-      "project-type": "phoenix-scraper",
-    },
+    headers,
   });
   const data = await res.json();
   if (data.code === 1007 && data.result) {
