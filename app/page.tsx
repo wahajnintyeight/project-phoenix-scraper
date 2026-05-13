@@ -9,9 +9,13 @@ import {
   fetchStats,
   fetchKeys,
   fetchVisits,
+  fetchBlockedContent,
+  createBlockedContent,
+  deleteBlockedContent,
   Stats,
   ApiKey,
   Visit,
+  BlockedContent,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -40,10 +44,13 @@ import {
   Database,
   LockKeyhole,
   FlaskConical,
+  ShieldOff,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { FilterBar } from "@/components/filter-bar";
 import { KeyCard } from "@/components/key-card";
+import { ContentBlockEditor } from "@/components/content-block-editor";
 
 export default function KeyScannerPage() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -59,6 +66,11 @@ export default function KeyScannerPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedBlocked, setSelectedBlocked] = useState<string | null>(null);
+  const [blockedRules, setBlockedRules] = useState<BlockedContent[]>([]);
+  const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [mobileTab, setMobileTab] = useState<"home" | "search" | "settings">("home");
 
   useEffect(() => {
@@ -83,13 +95,18 @@ export default function KeyScannerPage() {
     init();
   }, []);
 
-  const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null) => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null, blocked: string | null = null, search: string = "") => {
     if (!getSessionId()) return;
     setIsLoadingKeys(true);
     try {
       const [statsRes, keysRes] = await Promise.all([
         fetchStats(), 
-        fetchKeys(page, provider || undefined, status || undefined)
+        fetchKeys(page, provider || undefined, status || undefined, blocked || undefined, search || undefined)
       ]);
 
       if (statsRes.code === 1009) {
@@ -124,17 +141,48 @@ export default function KeyScannerPage() {
 
   useEffect(() => {
     if (!isInitializing && !error) {
-      loadData(currentPage, selectedProvider, selectedStatus);
+      loadData(currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch);
       loadVisits();
     }
-  }, [isInitializing, error, loadData, loadVisits, currentPage, selectedProvider, selectedStatus]);
+  }, [isInitializing, error, loadData, loadVisits, currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch]);
+
+  useEffect(() => {
+    if (!isInitializing && !error) {
+      loadBlockedRules();
+    }
+  }, [isInitializing, error]);
+
+  const loadBlockedRules = async () => {
+    setIsLoadingBlocked(true);
+    try {
+      const res = await fetchBlockedContent();
+      if (res.code === 1009) {
+        setBlockedRules(res.result.rules);
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsLoadingBlocked(false);
+    }
+  };
+
+  const handleAddBlockRule = async (pattern: string, type: string, description?: string) => {
+    await createBlockedContent(pattern, type, description);
+    await loadBlockedRules();
+  };
+
+  const handleDeleteBlockRule = async (id: string) => {
+    await deleteBlockedContent(id);
+    await loadBlockedRules();
+  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     toast.info("Refreshing live feed...", {
       icon: <RefreshCw className="h-4 w-4 animate-spin" />,
     });
-    await loadData(currentPage, selectedProvider, selectedStatus);
+    await loadData(currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch);
+    await loadBlockedRules();
     setIsRefreshing(false);
     toast.success("Dashboard updated", {
       icon: <Sparkles className="h-4 w-4" />,
@@ -171,10 +219,19 @@ export default function KeyScannerPage() {
 
   const handleStatusFilter = (status: string | null) => {
     setSelectedStatus(status);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
     const statusLabel = status === "Valid" ? "Valid keys" : status === "ValidNoCredits" ? "Valid (No Credits)" : "All statuses";
     toast.info(status ? `Filtering by ${statusLabel}` : "Showing all statuses", {
       icon: <Shield className="h-4 w-4" />,
+    });
+  };
+
+  const handleBlockedFilter = (blocked: string | null) => {
+    setSelectedBlocked(blocked);
+    setCurrentPage(1);
+    const label = blocked === "true" ? "Blocked keys" : blocked === "false" ? "Non-blocked keys" : "All keys";
+    toast.info(blocked ? `Showing ${label}` : "Showing all keys", {
+      icon: <ShieldOff className="h-4 w-4" />,
     });
   };
 
@@ -185,6 +242,7 @@ export default function KeyScannerPage() {
       google: "from-sky-400 to-blue-600",
       openrouter: "from-fuchsia-400 to-violet-500",
       moonshot: "from-indigo-400 to-purple-600",
+      deepseek: "from-blue-500 to-indigo-600",
       github: "from-slate-400 to-slate-600",
       stripe: "from-violet-400 to-indigo-600",
     };
@@ -244,6 +302,27 @@ export default function KeyScannerPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const downloadCSV = () => {
+    const headers = ["Provider", "Status", "Key Value", "Created At", "Validated At", "Error Count", "References"];
+    const rows = keys.map((k) => [
+      k.provider,
+      k.status,
+      k.key_value,
+      k.created_at,
+      k.validated_at || "",
+      k.error_count.toString(),
+      (k.repo_refs ?? k.references?.map((r) => r.file_url) ?? []).join("; "),
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `phoenix-keys-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (isInitializing) {
@@ -331,6 +410,13 @@ export default function KeyScannerPage() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
+            <Link
+              href="/scraper"
+              className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
+            >
+              <Search className="h-4 w-4 text-cyan-500" />
+              Scraper
+            </Link>
             <Link
               href="/key-tester"
               className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
@@ -632,18 +718,46 @@ export default function KeyScannerPage() {
         </section>
 
         <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
+          <div className="mb-4">
+            <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
+              Search & Filter
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Search keys or filter by provider and status
+            </p>
+          </div>
+          <FilterBar
+            providers={Object.keys(stats?.by_provider ?? {})}
+            selectedProvider={selectedProvider ?? ""}
+            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
+            onProviderChange={(provider) => handleProviderFilter(provider || null)}
+            onStatusChange={(status) => {
+              const map: Record<string, string | null> = {
+                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
+              };
+              handleStatusFilter(map[status] ?? null);
+            }}
+            searchQuery={searchQuery}
+            onSearchChange={(query) => {
+              setSearchQuery(query);
+              setCurrentPage(1);
+            }}
+          />
+        </section>
+
+        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                Filter by status
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-rose-400/80">
+                Filter by blocked status
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Filter keys by validation status
+                Filter keys matching block rules
               </p>
             </div>
-            {selectedStatus && (
+            {selectedBlocked && (
               <motion.button
-                onClick={() => handleStatusFilter(null)}
+                onClick={() => handleBlockedFilter(null)}
                 className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -654,15 +768,15 @@ export default function KeyScannerPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {[
-              { status: "Valid", label: "Valid", icon: Shield, color: "from-emerald-400 to-emerald-600" },
-              { status: "ValidNoCredits", label: "Valid (No Credits)", icon: AlertTriangle, color: "from-amber-400 to-amber-600" },
-            ].map(({ status, label, icon: Icon, color }) => (
+              { value: "true", label: "Blocked", icon: ShieldOff, color: "from-rose-400 to-rose-600" },
+              { value: "false", label: "Not Blocked", icon: Shield, color: "from-emerald-400 to-emerald-600" },
+            ].map(({ value, label, icon: Icon, color }) => (
               <motion.button
-                key={status}
-                onClick={() => handleStatusFilter(selectedStatus === status ? null : status)}
+                key={value}
+                onClick={() => handleBlockedFilter(selectedBlocked === value ? null : value)}
                 className={cn(
                   "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
-                  selectedStatus === status
+                  selectedBlocked === value
                     ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
                     : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
                 )}
@@ -678,6 +792,15 @@ export default function KeyScannerPage() {
           </div>
         </section>
 
+        <section className="mt-6 md:mt-8">
+          <ContentBlockEditor
+            rules={blockedRules}
+            isLoading={isLoadingBlocked}
+            onAdd={handleAddBlockRule}
+            onDelete={handleDeleteBlockRule}
+          />
+        </section>
+
         <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
           <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
             <div>
@@ -688,9 +811,11 @@ export default function KeyScannerPage() {
                 Exposed keys and source references
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {selectedProvider 
-                  ? `Showing ${selectedProvider} keys with validated findings and source paths.`
-                  : "Browse validated findings, review source paths, and move through paginated results."
+                {searchQuery
+                  ? `Search results for "${searchQuery}"`
+                  : selectedProvider 
+                    ? `Showing ${selectedProvider} keys with validated findings and source paths.`
+                    : "Browse validated findings, review source paths, and move through paginated results."
                 }
               </p>
               {stats?.last_validated_at && (
@@ -700,11 +825,23 @@ export default function KeyScannerPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm shadow-sm">
-              <span className="text-muted-foreground">Page</span>
-              <span className="font-medium tabular-nums">
-                {currentPage} / {totalPages}
-              </span>
+            <div className="flex items-center gap-3">
+              <motion.button
+                onClick={downloadCSV}
+                disabled={keys.length === 0}
+                className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">CSV</span>
+              </motion.button>
+              <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm shadow-sm">
+                <span className="text-muted-foreground">Page</span>
+                <span className="font-medium tabular-nums">
+                  {currentPage} / {totalPages}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -815,7 +952,7 @@ export default function KeyScannerPage() {
         <div className="grid grid-cols-4 gap-1">
           {[
             { id: "home", label: "Home", icon: Home, href: null },
-            { id: "search", label: "Explore", icon: Search, href: null },
+            { id: "scraper", label: "Scrape", icon: Search, href: "/scraper" },
             { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
             { id: "settings", label: "Theme", icon: Settings, href: null },
           ].map((item) =>

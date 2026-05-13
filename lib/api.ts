@@ -195,11 +195,15 @@ export interface QueriesResponse {
 export async function fetchKeys(
   page = 1,
   provider?: string,
-  status?: string
+  status?: string,
+  blocked?: string,
+  search?: string
 ): Promise<KeysResponse> {
   const params = new URLSearchParams({ page: page.toString() });
   if (provider) params.set("provider", provider);
   if (status) params.set("status", status);
+  if (blocked) params.set("blocked", blocked);
+  if (search) params.set("search", search);
   return authenticatedFetch<KeysResponse>(`/keys?${params.toString()}`);
 }
 
@@ -290,6 +294,45 @@ export interface OpenRouterModelsResponse {
   provider: string;
   models: OpenRouterModel[];
   count: number;
+}
+
+export interface BlockedContent {
+  id: string;
+  pattern: string;
+  type: "file_path" | "repo_url" | "key_prefix" | "provider" | "domain";
+  description?: string;
+  created_at: string;
+}
+
+export interface BlockedContentResponse {
+  code: number;
+  message: string;
+  result: {
+    rules: BlockedContent[];
+  };
+}
+
+export async function fetchBlockedContent(): Promise<BlockedContentResponse> {
+  return authenticatedFetch<BlockedContentResponse>("/config/blocked");
+}
+
+export async function createBlockedContent(
+  pattern: string,
+  type: string,
+  description?: string
+): Promise<{ code: number; message: string; result: BlockedContent }> {
+  return authenticatedFetch("/config/blocked", {
+    method: "POST",
+    body: JSON.stringify({ pattern, type, description }),
+  });
+}
+
+export async function deleteBlockedContent(
+  id: string
+): Promise<{ code: number; message: string; result: null }> {
+  return authenticatedFetch(`/config/blocked/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function fetchOpenRouterModels(apiKey: string): Promise<OpenRouterModelsResponse> {

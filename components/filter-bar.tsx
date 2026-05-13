@@ -47,13 +47,13 @@ export function FilterBar({
     >
       {/* Search input */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search keys..."
+          placeholder="Search by key value, provider..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="h-10 w-full rounded-xl border bg-card pl-10 pr-4 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/20"
+          className="h-10 w-full rounded-2xl border border-border/70 bg-background/80 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
         />
       </div>
 
@@ -65,7 +65,7 @@ export function FilterBar({
             value={selectedProvider}
             onChange={(e) => onProviderChange(e.target.value)}
             className={cn(
-              "h-10 appearance-none rounded-xl border bg-card pl-10 pr-8 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/20",
+              "h-10 appearance-none rounded-2xl border border-border/70 bg-background/80 pl-10 pr-8 text-sm outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/15",
               selectedProvider && "border-primary/50 bg-primary/5"
             )}
           >
@@ -82,7 +82,7 @@ export function FilterBar({
           value={selectedStatus}
           onChange={(e) => onStatusChange(e.target.value)}
           className={cn(
-            "h-10 appearance-none rounded-xl border bg-card px-4 pr-8 text-sm outline-none transition-all focus:ring-2 focus:ring-primary/20",
+            "h-10 appearance-none rounded-2xl border border-border/70 bg-background/80 px-4 pr-8 text-sm outline-none transition-all focus:border-primary/50 focus:ring-2 focus:ring-primary/15",
             selectedStatus && "border-primary/50 bg-primary/5"
           )}
         >
@@ -99,7 +99,7 @@ export function FilterBar({
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
             onClick={clearFilters}
-            className="flex h-10 items-center gap-1.5 rounded-xl border border-destructive/30 bg-destructive/10 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
+            className="flex h-10 items-center gap-1.5 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/20"
           >
             <X className="h-4 w-4" />
             Clear

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,9 @@ import {
   Play,
   Shield,
   TerminalSquare,
+  ShieldOff,
 } from "lucide-react";
+import { fetchBlockedContent, BlockedContent } from "@/lib/api";
 
 type SupportedProvider = {
   id: string;
@@ -298,8 +300,28 @@ function formatResponseBody(body: string) {
 export function CurlPlayground() {
   const [curlInput, setCurlInput] = useState(CURL_EXAMPLE);
   const [result, setResult] = useState<CurlExecutionState>({ status: "idle" });
+  const [blockedRules, setBlockedRules] = useState<BlockedContent[]>([]);
+
+  useEffect(() => {
+    fetchBlockedContent()
+      .then((res) => {
+        if (res.code === 1009) setBlockedRules(res.result.rules);
+      })
+      .catch(() => {});
+  }, []);
 
   const detectedProvider = useMemo(() => findSupportedProvider(curlInput), [curlInput]);
+
+  const isBlockedByRule = useMemo(() => {
+    if (blockedRules.length === 0) return null;
+    const lowered = curlInput.toLowerCase();
+    for (const rule of blockedRules) {
+      if (lowered.includes(rule.pattern.toLowerCase())) {
+        return rule;
+      }
+    }
+    return null;
+  }, [curlInput, blockedRules]);
 
   const handleRun = async () => {
     let parsed: ParsedCurl;
@@ -317,6 +339,22 @@ export function CurlPlayground() {
         error: message,
       });
       toast.error(message);
+      return;
+    }
+
+    if (isBlockedByRule) {
+      setResult({
+        status: "done",
+        ok: false,
+        provider: parsed.provider.label,
+        url: parsed.url,
+        responseHeaders: [],
+        responseBody: "",
+        error: `Blocked by rule "${isBlockedByRule.pattern}" (${isBlockedByRule.type.replace(/_/g, " ")})`,
+      });
+      toast.error("Request blocked by content rule", {
+        description: `"${isBlockedByRule.pattern}" matches a blocked ${isBlockedByRule.type.replace(/_/g, " ")} rule.`,
+      });
       return;
     }
 
@@ -420,6 +458,18 @@ export function CurlPlayground() {
               </span>
             );
           })}
+          {isBlockedByRule && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-500">
+              <ShieldOff className="h-3 w-3" />
+              Blocked: {isBlockedByRule.pattern}
+            </span>
+          )}
+          {blockedRules.length > 0 && !isBlockedByRule && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-500">
+              <Shield className="h-3 w-3" />
+              {blockedRules.length} rule{blockedRules.length > 1 ? "s" : ""} active
+            </span>
+          )}
         </div>
 
         <textarea

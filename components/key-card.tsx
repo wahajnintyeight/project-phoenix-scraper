@@ -92,6 +92,12 @@ const providerConfig: Record<
     soft: "bg-purple-600/10 text-purple-700 dark:text-purple-300",
     text: "text-purple-600",
   },
+  deepseek: {
+    primary: "bg-blue-600",
+    glow: "shadow-blue-600/20",
+    soft: "bg-blue-600/10 text-blue-700 dark:text-blue-300",
+    text: "text-blue-600",
+  },
   github: {
     primary: "bg-slate-700",
     glow: "shadow-slate-700/20",

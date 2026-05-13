@@ -40,6 +40,13 @@ export const PROVIDERS = [
     defaultModel: "kimi-k2-0905-preview",
     supportsModel: true,
   },
+  {
+    id: "DeepSeek",
+    label: "DeepSeek",
+    gradient: "from-blue-500 to-indigo-600",
+    defaultModel: "deepseek-chat",
+    supportsModel: true,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
