@@ -9,13 +9,9 @@ import {
   fetchStats,
   fetchKeys,
   fetchVisits,
-  fetchBlockedContent,
-  createBlockedContent,
-  deleteBlockedContent,
   Stats,
   ApiKey,
   Visit,
-  BlockedContent,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
@@ -45,13 +41,12 @@ import {
   Database,
   LockKeyhole,
   FlaskConical,
-  ShieldOff,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FilterBar } from "@/components/filter-bar";
 import { KeyCard } from "@/components/key-card";
-import { ContentBlockEditor } from "@/components/content-block-editor";
+
 
 export default function KeyScannerPage() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -67,9 +62,7 @@ export default function KeyScannerPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-  const [selectedBlocked, setSelectedBlocked] = useState<string | null>(null);
-  const [blockedRules, setBlockedRules] = useState<BlockedContent[]>([]);
-  const [isLoadingBlocked, setIsLoadingBlocked] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [mobileTab, setMobileTab] = useState<"home" | "search" | "settings">("home");
@@ -101,13 +94,13 @@ export default function KeyScannerPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null, blocked: string | null = null, search: string = "") => {
+  const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null, search: string = "") => {
     if (!getSessionId()) return;
     setIsLoadingKeys(true);
     try {
       const [statsRes, keysRes] = await Promise.all([
         fetchStats(), 
-        fetchKeys(page, provider || undefined, status || undefined, blocked || undefined, search || undefined)
+        fetchKeys(page, provider || undefined, status || undefined, search || undefined)
       ]);
 
       if (statsRes.code === 1009) {
@@ -142,48 +135,17 @@ export default function KeyScannerPage() {
 
   useEffect(() => {
     if (!isInitializing && !error) {
-      loadData(currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch);
+      loadData(currentPage, selectedProvider, selectedStatus, debouncedSearch);
       loadVisits();
     }
-  }, [isInitializing, error, loadData, loadVisits, currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch]);
-
-  useEffect(() => {
-    if (!isInitializing && !error) {
-      loadBlockedRules();
-    }
-  }, [isInitializing, error]);
-
-  const loadBlockedRules = async () => {
-    setIsLoadingBlocked(true);
-    try {
-      const res = await fetchBlockedContent();
-      if (res.code === 1009) {
-        setBlockedRules(res.result.rules);
-      }
-    } catch {
-      // silent
-    } finally {
-      setIsLoadingBlocked(false);
-    }
-  };
-
-  const handleAddBlockRule = async (pattern: string, type: string, description?: string) => {
-    await createBlockedContent(pattern, type, description);
-    await loadBlockedRules();
-  };
-
-  const handleDeleteBlockRule = async (id: string) => {
-    await deleteBlockedContent(id);
-    await loadBlockedRules();
-  };
+  }, [isInitializing, error, loadData, loadVisits, currentPage, selectedProvider, selectedStatus, debouncedSearch]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     toast.info("Refreshing live feed...", {
       icon: <RefreshCw className="h-4 w-4 animate-spin" />,
     });
-    await loadData(currentPage, selectedProvider, selectedStatus, selectedBlocked, debouncedSearch);
-    await loadBlockedRules();
+    await loadData(currentPage, selectedProvider, selectedStatus, debouncedSearch);
     setIsRefreshing(false);
     toast.success("Dashboard updated", {
       icon: <Sparkles className="h-4 w-4" />,
@@ -224,15 +186,6 @@ export default function KeyScannerPage() {
     const statusLabel = status === "Valid" ? "Valid keys" : status === "ValidNoCredits" ? "Valid (No Credits)" : "All statuses";
     toast.info(status ? `Filtering by ${statusLabel}` : "Showing all statuses", {
       icon: <Shield className="h-4 w-4" />,
-    });
-  };
-
-  const handleBlockedFilter = (blocked: string | null) => {
-    setSelectedBlocked(blocked);
-    setCurrentPage(1);
-    const label = blocked === "true" ? "Blocked keys" : blocked === "false" ? "Non-blocked keys" : "All keys";
-    toast.info(blocked ? `Showing ${label}` : "Showing all keys", {
-      icon: <ShieldOff className="h-4 w-4" />,
     });
   };
 
@@ -411,13 +364,6 @@ export default function KeyScannerPage() {
           </div>
 
           <div className="flex items-center gap-2 md:gap-3">
-            <Link
-              href="/scraper"
-              className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
-            >
-              <Search className="h-4 w-4 text-cyan-500" />
-              Scraper
-            </Link>
             <Link
               href="/key-tester"
               className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
@@ -746,62 +692,6 @@ export default function KeyScannerPage() {
           />
         </section>
 
-        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-rose-400/80">
-                Filter by blocked status
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Filter keys matching block rules
-              </p>
-            </div>
-            {selectedBlocked && (
-              <motion.button
-                onClick={() => handleBlockedFilter(null)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Clear filter
-              </motion.button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: "true", label: "Blocked", icon: ShieldOff, color: "from-rose-400 to-rose-600" },
-              { value: "false", label: "Not Blocked", icon: Shield, color: "from-emerald-400 to-emerald-600" },
-            ].map(({ value, label, icon: Icon, color }) => (
-              <motion.button
-                key={value}
-                onClick={() => handleBlockedFilter(selectedBlocked === value ? null : value)}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
-                  selectedBlocked === value
-                    ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
-                )}
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-              </motion.button>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-6 md:mt-8">
-          <ContentBlockEditor
-            rules={blockedRules}
-            isLoading={isLoadingBlocked}
-            onAdd={handleAddBlockRule}
-            onDelete={handleDeleteBlockRule}
-          />
-        </section>
-
         <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
           <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
             <div>
@@ -953,7 +843,7 @@ export default function KeyScannerPage() {
         <div className="grid grid-cols-4 gap-1">
           {[
             { id: "home", label: "Home", icon: Home, href: null },
-            { id: "scraper", label: "Scrape", icon: Search, href: "/scraper" },
+            { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
             { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
             { id: "settings", label: "Theme", icon: Settings, href: null },
           ].map((item) =>

@@ -335,6 +335,30 @@ export async function deleteBlockedContent(
   });
 }
 
+export interface DeepSeekBalance {
+  is_available: boolean;
+  balance_infos: Array<{
+    currency: string;
+    total_balance: string;
+    granted_balance: string;
+    topped_up_balance: string;
+  }>;
+}
+
+export async function fetchDeepSeekBalance(apiKey: string): Promise<DeepSeekBalance> {
+  const response = await fetch("https://api.deepseek.com/user/balance", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Balance check failed: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function fetchOpenRouterModels(apiKey: string): Promise<OpenRouterModelsResponse> {
   const response = await authenticatedFetch<{
     code: number;

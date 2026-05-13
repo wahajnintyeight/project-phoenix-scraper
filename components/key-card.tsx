@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ApiKey } from "@/lib/api";
+import { ApiKey, fetchDeepSeekBalance, type DeepSeekBalance } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -23,6 +23,7 @@ import {
   Sparkles,
   X,
   Fingerprint,
+  Wallet,
 } from "lucide-react";
 
 interface KeyCardProps {
@@ -122,6 +123,8 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
+  const [deepSeekBalance, setDeepSeekBalance] = useState<DeepSeekBalance | null>(null);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(false);
 
   const status = statusConfig[keyData.status] || statusConfig.Error;
   const StatusIcon = status.icon;
@@ -141,6 +144,23 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
       toast.error("Access Denied", {
         description: "System clipboard interaction failed.",
       });
+    }
+  };
+
+  const checkDeepSeekBalance = async () => {
+    setIsCheckingBalance(true);
+    try {
+      const balance = await fetchDeepSeekBalance(keyData.key_value);
+      setDeepSeekBalance(balance);
+      toast.success("Balance fetched", {
+        description: `$${balance.balance_infos[0]?.total_balance ?? "0.00"} available`,
+      });
+    } catch (err) {
+      toast.error("Balance check failed", {
+        description: err instanceof Error ? err.message : "Request failed",
+      });
+    } finally {
+      setIsCheckingBalance(false);
     }
   };
 
@@ -318,6 +338,65 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                         {keyData.credits.checked_at && (
                           <div className="mt-3 pt-3 border-t border-white/5 text-[10px] text-zinc-500">
                             Last checked: {formatDate(keyData.credits.checked_at)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {keyData.provider.toLowerCase() === "deepseek" && (
+                      <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5">
+                        {deepSeekBalance ? (
+                          <>
+                            <div className="flex items-center gap-2 mb-3">
+                              <Wallet className="h-4 w-4 text-blue-400" />
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                                Account Balance
+                              </span>
+                            </div>
+                            {deepSeekBalance.balance_infos.map((info, i) => (
+                              <div key={i} className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-zinc-500">Currency</span>
+                                  <span className="text-sm font-medium text-white">{info.currency}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-zinc-500">Total Balance</span>
+                                  <span className="text-2xl font-bold text-white">${info.total_balance}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-zinc-500">Topped Up</span>
+                                  <span className="text-sm font-medium text-zinc-300">${info.topped_up_balance}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-zinc-500">Granted</span>
+                                  <span className="text-sm font-medium text-zinc-300">${info.granted_balance}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center gap-3 py-2">
+                            <Wallet className="h-5 w-5 text-blue-400" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                              Balance Check
+                            </span>
+                            <p className="text-xs text-zinc-400 text-center">
+                              Check the remaining credit balance on this DeepSeek account.
+                            </p>
+                            <motion.button
+                              onClick={checkDeepSeekBalance}
+                              disabled={isCheckingBalance}
+                              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-500 disabled:opacity-50"
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                            >
+                              {isCheckingBalance ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Wallet className="h-3.5 w-3.5" />
+                              )}
+                              {isCheckingBalance ? "Checking..." : "Check Balance"}
+                            </motion.button>
                           </div>
                         )}
                       </div>
