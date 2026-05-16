@@ -6,6 +6,7 @@
  */
 export const IP_WHITELIST: string[] = [
   "119.63.*.*",
+  "149.71.36.*"
   // Add more patterns below:
   // "203.0.113.5",
   // "10.0.0.*",
