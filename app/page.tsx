@@ -334,551 +334,261 @@ export default function KeyScannerPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-background pb-24 md:pb-10">
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-[34rem] bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.22),transparent_35%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_28%),linear-gradient(180deg,rgba(10,14,18,0.35),transparent_70%)]" />
-        <div className="absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+    <div className="relative min-h-screen overflow-x-hidden bg-background selection:bg-primary/20 selection:text-primary">
+      {/* 2026 Spatial Background: Grain + Ambient Depth */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(34,197,94,0.15),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_100%,rgba(56,189,248,0.08),transparent_50%)]" />
       </div>
 
-      <motion.header
-        initial={{ y: -40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 border-b border-border/60 bg-background/75 backdrop-blur-2xl"
-      >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-emerald-400 to-lime-300 text-primary-foreground shadow-lg shadow-primary/20">
-              <Flame className="h-5 w-5" />
+      {/* Floating Island Header */}
+      <div className="fixed inset-x-0 top-6 z-50 flex justify-center px-4">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex h-14 items-center gap-6 rounded-full border border-white/10 bg-card/40 px-6 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all hover:border-white/20"
+        >
+          <div className="flex items-center gap-3 border-r border-white/10 pr-6">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+              <Flame className="h-4 w-4" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold tracking-tight md:text-lg">Phoenix</h1>
-                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                  Live
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground md:text-sm">
-                Exposure intelligence for leaked API credentials
-              </p>
-            </div>
+            <span className="font-mono text-sm font-bold uppercase tracking-widest">Phoenix</span>
           </div>
 
-          <div className="flex items-center gap-2 md:gap-3">
-            <Link
-              href="/key-tester"
-              className="hidden md:inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
-            >
-              <FlaskConical className="h-4 w-4 text-violet-500" />
-              Key Tester
-            </Link>
+          <nav className="hidden items-center gap-1 md:flex">
+            {[
+              { label: "Scanner", icon: Search, href: "/", active: true },
+              { label: "Tester", icon: FlaskConical, href: "/key-tester" },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-tighter transition-all hover:bg-white/5",
+                  item.active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3 border-l border-white/10 pl-6">
+            <ThemeToggle />
             <motion.button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex h-11 items-center gap-2 rounded-2xl border border-border/70 bg-card/80 px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted/80"
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10"
+              whileTap={{ scale: 0.9 }}
             >
-              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              <span className="hidden sm:inline">Refresh</span>
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
             </motion.button>
-            <ThemeToggle />
           </div>
-        </div>
-      </motion.header>
+        </motion.header>
+      </div>
 
-      <main className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
-        <section className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+      <main className="mx-auto max-w-7xl px-4 pt-32 pb-24 md:px-8">
+        {/* Typographic Hero */}
+        <section className="mb-12">
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="relative overflow-hidden rounded-[32px] border border-border/70 bg-card/80 p-6 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-8"
+            className="flex flex-col items-start gap-4"
           >
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(34,197,94,0.10),transparent_35%,rgba(255,255,255,0.04))] dark:bg-[linear-gradient(135deg,rgba(34,197,94,0.12),transparent_35%,rgba(255,255,255,0.02))]" />
-            <div className="relative">
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Enterprise-grade credential discovery
-              </div>
-
-              <h2 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance md:text-5xl lg:text-6xl">
-                Monitor exposed API keys with a polished, real-time security workspace.
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-                Phoenix continuously tracks discovered credentials, validates provider health,
-                and surfaces repository references in a focused dashboard built for analysts,
-                engineers, and security teams.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20">
-                  <LockKeyhole className="h-4 w-4" />
-                  Secure telemetry
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/70 px-5 py-3 text-sm font-medium text-foreground">
-                  <Database className="h-4 w-4 text-primary" />
-                  {stats?.valid_keys ?? 0} valid credentials
-                </div>
-              </div>
-
-              <div className="mt-10 grid gap-3 sm:grid-cols-3">
-                {[
-                  {
-                    icon: Shield,
-                    label: "Validation coverage",
-                    value: `${stats?.valid_keys ?? 0} verified`,
-                  },
-                  {
-                    icon: Activity,
-                    label: "Provider breadth",
-                    value: `${providerCount} providers`,
-                  },
-                  {
-                    icon: Clock,
-                    label: "Feed cadence",
-                    value: "Real-time updates",
-                  },
-                ].map((item, index) => (
-                  <motion.div
-                    key={item.label}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08 * index }}
-                    className="rounded-3xl border border-border/60 bg-background/75 p-4 shadow-sm"
-                  >
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <item.icon className="h-4 w-4" />
-                    </div>
-                    <p className="text-sm font-medium">{item.value}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
-                  </motion.div>
-                ))}
-              </div>
+            <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
+              </span>
+              Live discovery feed
             </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.05 }}
-            className="grid gap-4"
-          >
-            {[
-              {
-                title: "Theme aware",
-                description: "Professional light and dark presentation tuned for long review sessions.",
-                icon: mobileTab === "settings" ? MoonStar : SunMedium,
-              },
-              {
-                title: "Actionable insights",
-                description: "Repository references, timestamps, statuses, and copy-ready key access.",
-                icon: GitBranch,
-              },
-              {
-                title: "Operational clarity",
-                description: "A cleaner hierarchy, softer surfaces, and stronger content emphasis.",
-                icon: Search,
-              },
-            ].map((feature, index) => (
-              <div
-                key={feature.title}
-                className="rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl"
-              >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <h3 className="text-lg font-semibold tracking-tight">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {feature.description}
-                </p>
-                <div className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
-                  Learn more
-                  <ArrowRight className="h-4 w-4" />
-                </div>
-              </div>
-            ))}
+            <h1 className="max-w-3xl font-sans text-5xl font-bold tracking-[-0.04em] md:text-7xl">
+              Exposure <span className="text-muted-foreground/40 italic font-medium">intelligence.</span>
+            </h1>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              Real-time surveillance of leaked API credentials. Validated findings, provider telemetry, and source references consolidated into a spatial workspace.
+            </p>
           </motion.div>
         </section>
 
-        <section className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 xl:grid-cols-6">
-          {[
-            {
-              label: "Total credentials",
-              value: stats?.total_keys ?? 0,
-              icon: Key,
-              accent: "from-primary/20 to-emerald-400/20",
-              type: "number" as const,
-            },
-            {
-              label: "Valid keys",
-              value: stats?.valid_keys ?? 0,
-              icon: Shield,
-              accent: "from-emerald-500/20 to-lime-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Invalid findings",
-              value: stats?.invalid_keys ?? 0,
-              icon: AlertTriangle,
-              accent: "from-rose-500/20 to-orange-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Active providers",
-              value: providerCount,
-              icon: Activity,
-              accent: "from-sky-500/20 to-cyan-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Last validated",
-              value: formatTimestamp(stats?.last_validated_at),
-              icon: Clock,
-              accent: "from-violet-500/20 to-purple-300/20",
-              type: "text" as const,
-            },
-            {
-              label: "Last scraped",
-              value: formatTimestamp(stats?.last_scraped_at),
-              icon: Database,
-              accent: "from-cyan-500/20 to-blue-300/20",
-              type: "text" as const,
-            },
-          ].map((item, index) => (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.06 * index }}
-              className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl"
-            >
-              <div className={cn("absolute inset-0 bg-gradient-to-br", item.accent)} />
-              <div className="relative">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{item.label}</p>
-                    <div className={cn(
-                      "mt-3 font-semibold tracking-tight",
-                      item.type === "number" ? "text-3xl tabular-nums" : "text-xl"
-                    )}>
-                      {item.value}
-                    </div>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background/80 text-primary shadow-sm">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </section>
-
-        {stats?.by_provider && Object.keys(stats.by_provider).length > 0 && (
-          <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                  Filter by provider
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Click a provider to filter results
-                </p>
-              </div>
-              {selectedProvider && (
-                <motion.button
-                  onClick={() => handleProviderFilter(null)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Clear filter
-                </motion.button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(stats.by_provider)
-                .sort(([, a], [, b]) => b - a)
-                .map(([provider, count]) => (
-                  <motion.button
-                    key={provider}
-                    onClick={() => handleProviderFilter(selectedProvider === provider ? null : provider)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
-                      selectedProvider === provider
-                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                        : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
-                    )}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                  >
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      selectedProvider === provider ? "bg-primary-foreground" : `bg-gradient-to-br ${getProviderTone(provider)}`
-                    )} />
-                    <span>{provider}</span>
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-                      selectedProvider === provider
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      {count}
-                    </span>
-                  </motion.button>
-                ))}
-            </div>
-          </section>
-        )}
-
-        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-            <div className="mb-4">
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                Recent Visits (phoenix-scraper)
-              </p>
-            </div>
-            <div className="space-y-2">
-              {isLoadingVisits ? (
-                <div className="animate-pulse h-10 bg-muted rounded-2xl" />
-              ) : visits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No recent visits</p>
-              ) : (
-                visits.map((visit) => (
-                  <div key={visit.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {visit.country_code}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{visit.country}</p>
-                        <p className="text-xs text-muted-foreground">{visit.ip}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {new Date(visit.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-        </section>
-
-        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-          <div className="mb-4">
-            <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-              Search & Filter
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Search keys or filter by provider and status
-            </p>
-          </div>
-          <FilterBar
-            providers={Object.keys(stats?.by_provider ?? {})}
-            selectedProvider={selectedProvider ?? ""}
-            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
-            onProviderChange={(provider) => handleProviderFilter(provider || null)}
-            onStatusChange={(status) => {
-              const map: Record<string, string | null> = {
-                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
-              };
-              handleStatusFilter(map[status] ?? null);
-            }}
-            searchQuery={searchQuery}
-            onSearchChange={(query) => {
-              setSearchQuery(query);
-              setCurrentPage(1);
-            }}
-          />
-        </section>
-
-        <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
-          <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
+        {/* Command Bento: The Core Interface */}
+        <section className="mb-16 grid grid-cols-1 gap-4 md:grid-cols-4 md:grid-rows-2">
+          {/* Main Stats Bento */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="col-span-1 row-span-2 flex flex-col justify-between rounded-[32px] border border-white/5 bg-card/20 p-8 backdrop-blur-xl md:col-span-2"
+          >
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                Discovery stream
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-                Exposed keys and source references
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground">
-                {searchQuery
-                  ? `Search results for "${searchQuery}"`
-                  : selectedProvider 
-                    ? `Showing ${selectedProvider} keys with validated findings and source paths.`
-                    : "Browse validated findings, review source paths, and move through paginated results."
-                }
-              </p>
-              {stats?.last_validated_at && (
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>Last validation: {formatTimestamp(stats.last_validated_at)}</span>
+              <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Overview</p>
+              <div className="mt-8 grid grid-cols-2 gap-8">
+                <div>
+                  <p className="text-4xl font-bold tabular-nums tracking-tighter">{stats?.valid_keys ?? 0}</p>
+                  <p className="mt-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-500">
+                    <Shield className="h-3 w-3" /> Validated
+                  </p>
                 </div>
-              )}
+                <div>
+                  <p className="text-4xl font-bold tabular-nums tracking-tighter">{stats?.total_keys ?? 0}</p>
+                  <p className="mt-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <Key className="h-3 w-3" /> Scan Total
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-12 space-y-4">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <span>Discovery rate</span>
+                <span className="text-primary">+12.5%</span>
+              </div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: "65%" }}
+                  className="h-full bg-primary" 
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Search & Filter Bento */}
+          <div className="col-span-1 rounded-[32px] border border-white/5 bg-card/20 p-6 backdrop-blur-xl md:col-span-2">
+            <div className="flex h-full flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Filters</p>
+                <div className="flex gap-2">
+                   <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
+                   <div className="h-2 w-2 rounded-full bg-primary/40" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <FilterBar
+                  providers={Object.keys(stats?.by_provider ?? {})}
+                  selectedProvider={selectedProvider ?? ""}
+                  selectedStatus={selectedStatus?.toLowerCase() ?? ""}
+                  onProviderChange={(provider) => handleProviderFilter(provider || null)}
+                  onStatusChange={(status) => {
+                    const map: Record<string, string | null> = {
+                      "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
+                    };
+                    handleStatusFilter(map[status] ?? null);
+                  }}
+                  searchQuery={searchQuery}
+                  onSearchChange={(query) => {
+                    setSearchQuery(query);
+                    setCurrentPage(1);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Telemetry / Visits Bento */}
+          <div className="col-span-1 rounded-[32px] border border-white/5 bg-card/20 p-6 backdrop-blur-xl md:col-span-2">
+            <div className="flex h-full flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Telemetry</p>
+                <span className="font-mono text-[9px] text-muted-foreground/30">NORD_STRM_v2.6</span>
+              </div>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                {isLoadingVisits ? (
+                  <div className="flex gap-2">
+                    {[1, 2, 3].map(i => <div key={i} className="h-10 w-24 animate-pulse rounded-2xl bg-white/5" />)}
+                  </div>
+                ) : (
+                  visits.slice(0, 4).map((visit) => (
+                    <div key={visit.id} className="flex shrink-0 items-center gap-3 rounded-2xl border border-white/5 bg-white/5 px-4 py-2">
+                      <span className="font-mono text-[10px] font-bold text-primary">{visit.country_code}</span>
+                      <span className="font-mono text-[9px] text-muted-foreground tabular-nums">{visit.ip.split('.').slice(-2).join('.')}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Stream Section */}
+        <section>
+          <div className="mb-8 flex items-end justify-between">
+            <div>
+              <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Activity Stream</p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight">Real-time findings</h2>
             </div>
             <div className="flex items-center gap-3">
-              <motion.button
-                onClick={downloadCSV}
-                disabled={keys.length === 0}
-                className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">CSV</span>
-              </motion.button>
-              <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 text-sm shadow-sm">
-                <span className="text-muted-foreground">Page</span>
-                <span className="font-medium tabular-nums">
-                  {currentPage} / {totalPages}
-                </span>
-              </div>
+               <button 
+                 onClick={downloadCSV}
+                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-white/10"
+               >
+                 <Download className="h-3 w-3" /> Export_CSV
+               </button>
             </div>
           </div>
 
           {isLoadingKeys ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="h-36 animate-pulse rounded-[28px] border border-border/60 bg-background/80"
-                />
+            <div className="grid gap-4 md:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-48 animate-pulse rounded-[32px] border border-white/5 bg-white/5" />
               ))}
             </div>
           ) : (
-          <motion.div
-            className="grid gap-5 md:grid-cols-2 xl:grid-cols-3"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
             <AnimatePresence mode="popLayout">
-              {(keys ?? []).map((key, index) => (
-                <KeyCard
-                  key={key.id}
-                  index={index}
-                  keyData={{
-                    ...key,
-                    repo_refs: key.references?.map((ref) => ref.file_url) ?? [],
-                  } as ApiKey}
-                />
-              ))}
+              <motion.div
+                key="stream-grid"
+                className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {(keys ?? []).map((key, index) => (
+                  <KeyCard
+                    key={key.id}
+                    index={index}
+                    keyData={{
+                      ...key,
+                      repo_refs: key.references?.map((ref) => ref.file_url) ?? [],
+                    } as ApiKey}
+                  />
+                ))}
+              </motion.div>
+
+              {totalPages > 1 && (
+                <div key="pagination" className="mt-12 flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 transition-all hover:bg-white/5 disabled:opacity-20"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <div className="flex items-center gap-1 px-4">
+                    <span className="font-mono text-xs font-bold">{currentPage}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground/40">/</span>
+                    <span className="font-mono text-xs text-muted-foreground/60">{totalPages}</span>
+                  </div>
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 transition-all hover:bg-white/5 disabled:opacity-20"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </AnimatePresence>
-          </motion.div>
-          )}
-
-          {totalPages > 1 && !isLoadingKeys && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6 flex items-center justify-center gap-2"
-            >
-              <motion.button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className={cn(
-                  "flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-background transition-colors",
-                  currentPage === 1 ? "cursor-not-allowed opacity-40" : "hover:bg-muted"
-                )}
-                whileTap={{ scale: 0.96 }}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </motion.button>
-
-              <div className="hidden items-center gap-2 md:flex">
-                {getPageNumbers().map((page, index) =>
-                  page === "..." ? (
-                    <span key={`ellipsis-${index}`} className="px-1 text-muted-foreground">
-                      ...
-                    </span>
-                  ) : (
-                    <motion.button
-                      key={page}
-                      onClick={() => goToPage(page)}
-                      className={cn(
-                        "flex h-11 min-w-11 items-center justify-center rounded-2xl border px-4 text-sm font-medium transition-colors",
-                        currentPage === page
-                          ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                          : "border-border/70 bg-background hover:bg-muted"
-                      )}
-                      whileTap={{ scale: 0.96 }}
-                    >
-                      {page}
-                    </motion.button>
-                  )
-                )}
-              </div>
-
-              <div className="px-3 text-sm font-medium tabular-nums md:hidden">
-                {currentPage} / {totalPages}
-              </div>
-
-              <motion.button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className={cn(
-                  "flex h-11 w-11 items-center justify-center rounded-2xl border border-border/70 bg-background transition-colors",
-                  currentPage === totalPages ? "cursor-not-allowed opacity-40" : "hover:bg-muted"
-                )}
-                whileTap={{ scale: 0.96 }}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </motion.button>
-            </motion.div>
           )}
         </section>
       </main>
 
-      <footer className="mx-auto mt-8 max-w-7xl px-4 pb-28 text-center text-sm text-muted-foreground md:px-6 md:pb-8">
-        Phoenix Key Scanner · A cleaner command center for discovery and validation
+      <footer className="py-12 text-center">
+        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.4em] text-muted-foreground/30">
+          Phoenix · Secure Console v2.0.26
+        </p>
       </footer>
 
-      <motion.nav
-        initial={{ y: 100 }}
-        animate={{ y: 0 }}
-        className="fixed inset-x-4 bottom-4 z-50 rounded-[28px] border border-border/70 bg-background/85 p-2 shadow-2xl shadow-black/10 backdrop-blur-2xl md:hidden"
-      >
-        <div className="grid grid-cols-4 gap-1">
-          {[
-            { id: "home", label: "Home", icon: Home, href: null },
-            { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
-            { id: "tester", label: "Test", icon: FlaskConical, href: "/key-tester" },
-            { id: "settings", label: "Theme", icon: Settings, href: null },
-          ].map((item) =>
-            item.href ? (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex flex-col items-center gap-1 rounded-[22px] px-2 py-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </Link>
-            ) : (
-              <motion.button
-                key={item.id}
-                onClick={() =>
-                  setMobileTab(item.id as "home" | "search" | "settings")
-                }
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-[22px] px-2 py-3 text-xs font-medium transition-colors",
-                  mobileTab === item.id
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground"
-                )}
-                whileTap={{ scale: 0.97 }}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </motion.button>
-            )
-          )}
-        </div>
-      </motion.nav>
-
-      <Toaster position="top-center" richColors />
+      <Toaster position="bottom-right" theme="dark" richColors />
     </div>
   );
+
 }

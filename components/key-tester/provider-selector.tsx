@@ -58,35 +58,32 @@ interface ProviderSelectorProps {
 
 export function ProviderSelector({ selected, onChange }: ProviderSelectorProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="flex flex-wrap gap-2">
       {PROVIDERS.map((provider, i) => {
         const isSelected = selected === provider.id;
         return (
           <motion.button
             key={provider.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.03 }}
             onClick={() => onChange(provider.id)}
             className={cn(
-              "relative flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-medium transition-all",
+              "relative flex items-center gap-2 rounded-full border px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
               isSelected
-                ? "border-primary/40 bg-primary/10 text-foreground shadow-sm"
-                : "border-border/60 bg-background/60 text-muted-foreground hover:bg-muted/60"
+                ? "border-violet-500/50 bg-violet-500/10 text-white shadow-[0_0_20px_rgba(139,92,246,0.15)]"
+                : "border-white/5 bg-white/5 text-muted-foreground hover:bg-white/10 hover:border-white/10"
             )}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.97 }}
           >
             <span
               className={cn(
-                "h-2.5 w-2.5 rounded-full bg-gradient-to-br",
+                "h-1.5 w-1.5 rounded-full bg-gradient-to-br",
                 provider.gradient
               )}
             />
             {provider.label}
-            {isSelected && (
-              <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-primary" />
-            )}
           </motion.button>
         );
       })}

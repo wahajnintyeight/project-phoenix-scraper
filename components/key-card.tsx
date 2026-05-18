@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { ApiKey, fetchDeepSeekBalance, type DeepSeekBalance } from "@/lib/api";
@@ -125,6 +125,11 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
   const [isRevealed, setIsRevealed] = useState(false);
   const [deepSeekBalance, setDeepSeekBalance] = useState<DeepSeekBalance | null>(null);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const status = statusConfig[keyData.status] || statusConfig.Error;
   const StatusIcon = status.icon;
@@ -176,51 +181,53 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
   return (
     <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: index * 0.05, ease: [0.19, 1, 0.22, 1] }}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.04 }}
       >
         <Dialog.Trigger asChild>
           <motion.article
-            whileHover={{ y: -4 }}
-            className="group relative cursor-pointer overflow-hidden rounded-[24px] border border-white/10 bg-card/40 p-5 shadow-xl backdrop-blur-md transition-all hover:bg-card/60"
+            whileHover={{ y: -2 }}
+            className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-white/5 bg-white/[0.01] p-6 shadow-sm transition-all hover:bg-white/[0.03] hover:border-white/10"
           >
+            {/* Ink Status Accent */}
+            <div className={cn(
+              "absolute left-0 top-0 h-1 w-full bg-gradient-to-r transition-opacity group-hover:opacity-100 opacity-30",
+              keyData.status === "Valid" ? "from-emerald-500/80 to-transparent" : "from-rose-500/80 to-transparent"
+            )} />
+
             <div className="flex items-start justify-between">
-              <div
-                className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110",
-                  provider.primary,
-                  provider.glow
-                )}
-              >
-                <Key className="h-5 w-5 text-white" />
+              <div>
+                <p className="font-mono text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/40 group-hover:text-primary transition-colors">
+                  {keyData.provider}
+                </p>
+                <h3 className="mt-2 font-sans text-lg font-bold tracking-tight text-foreground">
+                  {keyData.provider.charAt(0).toUpperCase() + keyData.provider.slice(1)}
+                </h3>
               </div>
-              <span
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+              <div className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full border border-white/5 bg-white/5",
+                provider.text
+              )}>
+                <Key className="h-3.5 w-3.5" />
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-end justify-between">
+              <div className="space-y-1">
+                <p className="font-mono text-[10px] font-bold text-muted-foreground/60">VALIDATED_AT</p>
+                <p className="font-mono text-[10px] text-muted-foreground/40 tabular-nums uppercase">
+                  {isMounted ? formatDate(keyData?.validated_at) : "---"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest",
                   status.className
-                )}
-              >
-                <StatusIcon className="h-3 w-3" />
-                {status.label}
-              </span>
-            </div>
-
-            <div className="mt-4">
-              <h3 className="font-mono text-lg font-bold uppercase tracking-tighter text-foreground">
-                {keyData.provider}
-              </h3>
-              <p className="text-xs text-muted-foreground/80">
-                Verified at {formatDate(keyData?.validated_at)}
-              </p>
-            </div>
-
-            <div className="mt-6 flex items-center justify-between border-t border-white/5 pt-4">
-              <div className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
-                <Sparkles className={cn("h-3 w-3", provider.text)} />
-                {keyData.error_count} ERRORS
+                )}>
+                  {status.label}
+                </span>
               </div>
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
           </motion.article>
         </Dialog.Trigger>
@@ -302,13 +309,15 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                       <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
                         <CalendarClock className="h-4 w-4 text-zinc-500 mb-2" />
                         <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Detected</div>
-                        <div className="text-sm font-medium text-white mt-1">{formatDate(keyData.created_at)}</div>
+                        <div className="text-sm font-medium text-white mt-1">
+                          {isMounted ? formatDate(keyData.created_at) : "---"}
+                        </div>
                       </div>
                       <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
                         <ShieldCheck className={cn("h-4 w-4 mb-2", provider.text)} />
                         <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Verified</div>
                         <div className="text-sm font-medium text-white mt-1">
-                          {keyData.validated_at ? formatDate(keyData.validated_at) : "Pending"}
+                          {keyData.validated_at && isMounted ? formatDate(keyData.validated_at) : "Pending"}
                         </div>
                       </div>
                     </div>
@@ -337,7 +346,7 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                         </div>
                         {keyData.credits.checked_at && (
                           <div className="mt-3 pt-3 border-t border-white/5 text-[10px] text-zinc-500">
-                            Last checked: {formatDate(keyData.credits.checked_at)}
+                            Last checked: {isMounted ? formatDate(keyData.credits.checked_at) : "---"}
                           </div>
                         )}
                       </div>

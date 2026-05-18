@@ -26,6 +26,8 @@ import {
   Check,
   Loader2,
   ChevronRight,
+  Shield,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -451,133 +453,143 @@ export default function KeyTesterPage() {
   const canTest = keyValue.trim() !== "" && selectedProvider !== null && !isTesting;
 
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-[34rem] bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.18),transparent_35%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.06),transparent_70%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.22),transparent_35%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_28%),linear-gradient(180deg,rgba(10,14,18,0.35),transparent_70%)]" />
-        <div className="absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
+    <div className="relative min-h-screen overflow-x-hidden bg-background selection:bg-primary/20 selection:text-primary">
+      {/* 2026 Spatial Background */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(139,92,246,0.15),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_100%,rgba(56,189,248,0.08),transparent_50%)]" />
       </div>
 
-      {/* Header */}
-      <motion.header
-        initial={{ y: -40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 border-b border-border/60 bg-background/75 backdrop-blur-2xl"
-      >
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/70 bg-card/80 text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" />
+      {/* Floating Island Header */}
+      <div className="fixed inset-x-0 top-6 z-50 flex justify-center px-4">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex h-14 items-center gap-6 rounded-full border border-white/10 bg-card/40 px-6 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all hover:border-white/20"
+        >
+          <div className="flex items-center gap-3 border-r border-white/10 pr-6">
+            <Link href="/" className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <FlaskConical className="h-4 w-4" />
             </Link>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-sm">
-                <FlaskConical className="h-4 w-4" />
-              </div>
-              <div>
-                <h1 className="text-sm font-semibold tracking-tight md:text-base">Key Tester</h1>
-                <p className="text-xs text-muted-foreground">Validate API keys without storing</p>
-              </div>
-            </div>
+            <span className="font-mono text-sm font-bold uppercase tracking-widest">Tester</span>
           </div>
-          <div className="flex items-center gap-2">
+
+          <nav className="hidden items-center gap-1 md:flex">
+            {[
+              { label: "Scanner", icon: Search, href: "/" },
+              { label: "Tester", icon: FlaskConical, href: "/key-tester", active: true },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-tighter transition-all hover:bg-white/5",
+                  item.active ? "text-violet-400" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-3.5 w-3.5" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3 border-l border-white/10 pl-6">
+            <ThemeToggle />
             {hasResults && (
               <motion.button
                 onClick={handleReset}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="inline-flex h-9 items-center gap-2 rounded-xl border border-border/70 bg-card/80 px-3 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:bg-muted/80 hover:text-foreground"
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.97 }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10 text-muted-foreground hover:text-foreground"
+                whileTap={{ scale: 0.9 }}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
-                Reset
               </motion.button>
             )}
-            <ThemeToggle />
           </div>
-        </div>
-      </motion.header>
+        </motion.header>
+      </div>
 
-      <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 text-center"
-        >
-          <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
-            <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
-            No data stored — session only
-          </span>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight md:text-4xl">
-            Test your API keys
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Switch between direct key validation and a restricted browser curl replay for supported AI providers.
-          </p>
-        </motion.div>
+      <main className="mx-auto max-w-4xl px-4 pt-32 pb-24 md:px-8">
+        {/* Typographic Hero */}
+        <section className="mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center text-center gap-4"
+          >
+            <div className="flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-violet-400">
+              <Shield className="h-3.5 w-3.5" />
+              Session-only validation
+            </div>
+            <h1 className="max-w-3xl font-sans text-5xl font-bold tracking-[-0.04em] md:text-7xl">
+              Key <span className="text-muted-foreground/40 italic font-medium">validation.</span>
+            </h1>
+            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
+              Non-custodial API key verification and browser-level curl replay. Test credentials across major AI providers with zero persistence.
+            </p>
+          </motion.div>
+        </section>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "key" | "curl")} className="space-y-5">
-          <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl border border-border/70 bg-card/70 p-1 shadow-sm backdrop-blur-xl">
-            <TabsTrigger value="key" className="rounded-xl py-2.5 text-sm font-medium">
-              Key tester
-            </TabsTrigger>
-            <TabsTrigger value="curl" className="rounded-xl py-2.5 text-sm font-medium">
-              Curl replay
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "key" | "curl")} className="space-y-8">
+          <div className="flex justify-center">
+            <TabsList className="inline-flex h-12 items-center rounded-full border border-white/5 bg-card/20 p-1 backdrop-blur-xl">
+              <TabsTrigger value="key" className="rounded-full px-8 py-2 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-violet-500 data-[state=active]:text-white">
+                Direct Validation
+              </TabsTrigger>
+              <TabsTrigger value="curl" className="rounded-full px-8 py-2 text-xs font-bold uppercase tracking-widest data-[state=active]:bg-violet-500 data-[state=active]:text-white">
+                Curl Replay
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="key" className="space-y-4">
-            <div className="space-y-4">
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
-              >
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                  API Key
-                </label>
-                <div className="relative">
-                  <Key className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type={showKey ? "text" : "password"}
-                    value={keyValue}
-                    onChange={(e) => setKeyValue(e.target.value)}
-                    placeholder="sk-… or any API key"
-                    onKeyDown={(e) => { if (e.key === "Enter") e.stopPropagation(); }}
-                    className="w-full rounded-2xl border border-border/60 bg-background/60 py-3 pl-10 pr-12 text-sm outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </motion.div>
+          <TabsContent value="key" className="space-y-6">
+            <div className="grid gap-4">
+              {/* Input Bento Row */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="rounded-[32px] border border-white/5 bg-card/20 p-8 backdrop-blur-xl"
+                >
+                  <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">Credential_Input</p>
+                  <div className="relative mt-6">
+                    <Key className="absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                    <input
+                      type={showKey ? "text" : "password"}
+                      value={keyValue}
+                      onChange={(e) => setKeyValue(e.target.value)}
+                      placeholder="sk-..."
+                      className="w-full bg-transparent border-b border-white/10 pb-2 pl-8 pr-12 font-mono text-sm outline-none transition-all focus:border-violet-500/50 placeholder:text-muted-foreground/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKey((v) => !v)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground"
+                    >
+                      {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </motion.div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
-              >
-                <label className="mb-3 block text-xs font-medium text-muted-foreground">
-                  Provider
-                </label>
-                <ProviderSelector selected={selectedProvider} onChange={setSelectedProvider} />
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="rounded-[32px] border border-white/5 bg-card/20 p-8 backdrop-blur-xl"
+                >
+                  <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">Target_System</p>
+                  <div className="mt-4">
+                    <ProviderSelector selected={selectedProvider} onChange={setSelectedProvider} />
+                  </div>
+                </motion.div>
+              </div>
 
+              {/* Overrides Bento */}
               <AnimatePresence>
                 {selectedProvider && (
                   <motion.div
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
+                    exit={{ opacity: 0, y: -10 }}
                   >
                     <ModelOverrides
                       selectedProvider={selectedProvider}
@@ -591,42 +603,44 @@ export default function KeyTesterPage() {
                 )}
               </AnimatePresence>
 
+              {/* Execution */}
               <motion.button
                 onClick={handleTest}
                 disabled={!canTest}
                 className={cn(
-                  "flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold shadow-lg transition-all",
+                  "group relative flex w-full items-center justify-center gap-3 overflow-hidden rounded-full py-5 text-xs font-black uppercase tracking-[0.2em] transition-all",
                   canTest
-                    ? "bg-primary text-primary-foreground shadow-primary/20 hover:opacity-90"
-                    : "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
+                    ? "bg-violet-500 text-white shadow-[0_12px_48px_rgba(139,92,246,0.25)] hover:shadow-[0_12px_64px_rgba(139,92,246,0.35)] hover:-translate-y-0.5"
+                    : "cursor-not-allowed bg-white/5 text-muted-foreground/40"
                 )}
-                whileHover={canTest ? { y: -1 } : {}}
-                whileTap={canTest ? { scale: 0.98 } : {}}
               >
                 {isTesting ? (
                   <>
-                    <FlaskConical className="h-4 w-4 animate-pulse" />
-                    Running tests…
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Executing_Test
                   </>
                 ) : (
                   <>
-                    <Play className="h-4 w-4" />
-                    Run test
+                    <Play className="h-4 w-4 transition-transform group-hover:scale-110" />
+                    Initialize Validation
                   </>
                 )}
               </motion.button>
 
+              {/* Results Stream */}
               <AnimatePresence>
                 {hasResults && (
                   <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-3 pt-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="space-y-4 pt-4"
                   >
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Results ({results.filter((r) => r.status === "done").length}/{results.length})
-                    </p>
+                    <div className="flex items-center justify-between px-2">
+                      <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">Verification_Output</p>
+                      <span className="font-mono text-[10px] text-muted-foreground/20 uppercase tracking-tighter">
+                        {results.filter((r) => r.status === "done").length}/{results.length} COMPLETE
+                      </span>
+                    </div>
                     {results.map((entry, i) => (
                       <TestResultCard key={`${entry.provider}-${i}`} entry={entry} />
                     ))}
@@ -642,7 +656,14 @@ export default function KeyTesterPage() {
         </Tabs>
       </main>
 
-      <Toaster position="top-center" richColors />
+      <footer className="py-12 text-center">
+        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.4em] text-muted-foreground/30">
+          Phoenix · Tester Console v2.0.26
+        </p>
+      </footer>
+
+      <Toaster position="bottom-right" theme="dark" richColors />
     </div>
   );
+
 }
