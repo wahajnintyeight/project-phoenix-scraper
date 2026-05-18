@@ -31,9 +31,11 @@ import {
   TrendingUp,
   Cpu,
   Fingerprint,
+  FlaskConical,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { KeyCard } from "@/components/key-card";
+import Link from "next/link";
 
 export default function KeyScannerPage() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -157,17 +159,33 @@ export default function KeyScannerPage() {
 
       <nav className="sticky top-0 z-[100] border-b border-white/5 bg-black/20 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-              <Flame className="h-5 w-5 text-black" strokeWidth={2.5} />
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 border-r border-white/10 pr-6">
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                <Flame className="h-5 w-5 text-black" strokeWidth={2.5} />
+              </div>
+              <div className="hidden flex-col md:flex">
+                <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Phoenix</span>
+                <span className="text-[10px] font-mono text-emerald-500/80">LIVE_PROTOCOL_V2</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Phoenix</span>
-              <span className="text-[10px] font-mono text-emerald-500/80">LIVE_PROTOCOL_V2</span>
+
+            <div className="hidden items-center gap-1 md:flex">
+              <Link href="/" className="flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-tighter transition-all bg-white/5 text-emerald-400">
+                <Search className="h-3.5 w-3.5" /> Scanner
+              </Link>
+              <Link href="/key-tester" className="flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-tighter transition-all text-muted-foreground hover:bg-white/5 hover:text-foreground">
+                <FlaskConical className="h-3.5 w-3.5" /> Tester
+              </Link>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:hidden mr-2">
+               <Link href="/" className="p-2 text-emerald-400"><Search className="h-4 w-4" /></Link>
+               <Link href="/key-tester" className="p-2 text-muted-foreground"><FlaskConical className="h-4 w-4" /></Link>
+            </div>
+
             <div className="hidden md:flex mr-4 h-8 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-400">Stream: Active</span>
@@ -175,7 +193,7 @@ export default function KeyScannerPage() {
             <ThemeToggle />
             <button
               onClick={handleRefresh}
-              className={cn("p-2 rounded-lg hover:bg-white/5 transition-colors", isRefreshing && "animate-spin")}
+              className={cn("p-2 rounded-lg hover:bg-white/5 transition-colors text-slate-400 hover:text-white", isRefreshing && "animate-spin")}
             >
               <RefreshCw className="h-4 w-4" />
             </button>
