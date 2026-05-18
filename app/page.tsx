@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast, Toaster } from "sonner";
 import {
@@ -15,40 +15,25 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
-  Menu,
   Flame,
   RefreshCw,
-  Sparkles,
   Zap,
   Shield,
   AlertTriangle,
-  Copy,
-  Check,
   ChevronLeft,
   ChevronRight,
   Activity,
   Clock,
   Key,
-  ExternalLink,
-  GitBranch,
-  FileCode,
-  Home,
-  Search,
-  Settings,
   Download,
-  ArrowRight,
-  MoonStar,
-  SunMedium,
-  Database,
-  LockKeyhole,
-  FlaskConical,
+  Search,
+  Globe,
+  TrendingUp,
+  Cpu,
+  Fingerprint,
 } from "lucide-react";
-import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FilterBar } from "@/components/filter-bar";
 import { KeyCard } from "@/components/key-card";
-
 
 export default function KeyScannerPage() {
   const [isInitializing, setIsInitializing] = useState(true);
@@ -59,31 +44,39 @@ export default function KeyScannerPage() {
   const [isLoadingKeys, setIsLoadingKeys] = useState(true);
   const [isLoadingVisits, setIsLoadingVisits] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [mobileTab, setMobileTab] = useState<"home" | "search" | "settings">("home");
+
+  const topCountryStats = useMemo(() => {
+    if (!visits.length) return null;
+    const counts: Record<string, { count: number; name: string; times: string[] }> = {};
+    visits.forEach((v) => {
+      if (!counts[v.country_code]) {
+        counts[v.country_code] = { count: 0, name: v.country, times: [] };
+      }
+      counts[v.country_code].count++;
+      counts[v.country_code].times.push(new Date(v.created_at).getHours() + ":00");
+    });
+    const top = Object.values(counts).reduce((a, b) => (a.count > b.count ? a : b));
+
+    const hourCounts: Record<string, number> = {};
+    top.times.forEach(h => hourCounts[h] = (hourCounts[h] || 0) + 1);
+    const peakTime = Object.keys(hourCounts).reduce((a, b) => hourCounts[a] > hourCounts[b] ? a : b);
+
+    return { ...top, peakTime };
+  }, [visits]);
 
   useEffect(() => {
     async function init() {
       try {
-        if (!getSessionId()) {
-          await createSession();
-          toast.success("Connected", {
-            description: "Phoenix API ready",
-            icon: <Zap className="h-4 w-4" />,
-          });
-        }
+        if (!getSessionId()) await createSession();
         setError(null);
       } catch (err) {
-        console.error("Session initialization failed:", err);
-        setError("Failed to connect. Please refresh the page.");
-        toast.error("Connection failed");
+        setError("Network Outage Detected");
       } finally {
         setIsInitializing(false);
       }
@@ -101,35 +94,25 @@ export default function KeyScannerPage() {
     setIsLoadingKeys(true);
     try {
       const [statsRes, keysRes] = await Promise.all([
-        fetchStats(), 
+        fetchStats(),
         fetchKeys(page, provider || undefined, status || undefined, search || undefined)
       ]);
-
-      if (statsRes.code === 1009) {
-        setStats(statsRes.result);
-      }
+      if (statsRes.code === 1009) setStats(statsRes.result);
       if (keysRes.code === 1009) {
         setKeys(keysRes.result.keys);
         setTotalPages(keysRes.result.total_pages || 1);
       }
-    } catch (err) {
-      console.error("Failed to fetch data:", err);
-      toast.error("Failed to load data");
     } finally {
       setIsLoadingKeys(false);
     }
   }, []);
 
-  const loadVisits = useCallback(async (page: number = 1, project: string = "phoenix-scraper") => {
+  const loadVisits = useCallback(async () => {
     if (!getSessionId()) return;
     setIsLoadingVisits(true);
     try {
-      const res = await fetchVisits(page, project);
-      if (res.code === 1094) {
-        setVisits(res.result.visits);
-      }
-    } catch (err) {
-      console.error("Failed to fetch visits:", err);
+      const res = await fetchVisits(1, "phoenix-scraper");
+      if (res.code === 1094) setVisits(res.result.visits);
     } finally {
       setIsLoadingVisits(false);
     }
@@ -144,659 +127,281 @@ export default function KeyScannerPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    toast.info("Refreshing live feed...", {
-      icon: <RefreshCw className="h-4 w-4 animate-spin" />,
-    });
     await loadData(currentPage, selectedProvider, selectedStatus, debouncedSearch);
+    await loadVisits();
     setIsRefreshing(false);
-    toast.success("Dashboard updated", {
-      icon: <Sparkles className="h-4 w-4" />,
-    });
-  };
-
-  const handleCopy = async (keyValue: string, id: string, provider: string) => {
-    try {
-      await navigator.clipboard.writeText(keyValue);
-      setCopiedId(id);
-      toast.success("Copied to clipboard", {
-        description: `${provider} key`,
-      });
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  const handleProviderFilter = (provider: string | null) => {
-    setSelectedProvider(provider);
-    setCurrentPage(1); // Reset to first page when filtering
-    toast.info(provider ? `Filtering by ${provider}` : "Showing all providers", {
-      icon: <Search className="h-4 w-4" />,
-    });
-  };
-
-  const handleStatusFilter = (status: string | null) => {
-    setSelectedStatus(status);
-    setCurrentPage(1);
-    const statusLabel = status === "Valid" ? "Valid keys" : status === "ValidNoCredits" ? "Valid (No Credits)" : "All statuses";
-    toast.info(status ? `Filtering by ${statusLabel}` : "Showing all statuses", {
-      icon: <Shield className="h-4 w-4" />,
-    });
-  };
-
-  const getProviderTone = (provider: string) => {
-    const tones: Record<string, string> = {
-      openai: "from-emerald-400 to-emerald-600",
-      anthropic: "from-orange-400 to-amber-500",
-      google: "from-sky-400 to-blue-600",
-      openrouter: "from-fuchsia-400 to-violet-500",
-      moonshot: "from-indigo-400 to-purple-600",
-      deepseek: "from-blue-500 to-indigo-600",
-      github: "from-slate-400 to-slate-600",
-      stripe: "from-violet-400 to-indigo-600",
-    };
-    return tones[provider.toLowerCase()] || "from-primary to-primary";
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Valid:
-        "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-      Invalid:
-        "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-      Pending:
-        "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-      Error:
-        "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-    };
-    return colors[status] || colors.Error;
-  };
-
-  const getPageNumbers = () => {
-    const pages: (number | "...")[] = [];
-    const maxVisible = 5;
-
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else if (currentPage <= 3) {
-      pages.push(1, 2, 3, 4, "...", totalPages);
-    } else if (currentPage >= totalPages - 2) {
-      pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
-    } else {
-      pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
-    }
-
-    return pages;
-  };
-
-  const providerCount = stats?.by_provider ? Object.keys(stats.by_provider).length : 0;
-
-  const formatTimestamp = (timestamp?: string) => {
-    if (!timestamp) return "Never";
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    toast.success("Intelligence Stream Synced");
   };
 
   const downloadCSV = () => {
-    const headers = ["Provider", "Status", "Key Value", "Created At", "Validated At", "Error Count", "References"];
-    const rows = keys.map((k) => [
-      k.provider,
-      k.status,
-      k.key_value,
-      k.created_at,
-      k.validated_at || "",
-      k.error_count.toString(),
-      (k.repo_refs ?? k.references?.map((r) => r.file_url) ?? []).join("; "),
-    ]);
-    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const headers = ["Provider", "Key Value", "Status"];
+    const rows = keys.map((k) => [k.provider, k.key_value, k.status]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `phoenix-keys-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `phoenix_export.csv`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
-  if (isInitializing) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex max-w-sm flex-col items-center gap-6 rounded-[32px] border border-border/60 bg-card/80 p-10 text-center shadow-2xl shadow-black/10 backdrop-blur-2xl"
-        >
-          <motion.div
-            className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground shadow-lg"
-            animate={{ rotate: [0, 180, 360], scale: [1, 1.05, 1] }}
-            transition={{ duration: 3.6, repeat: Infinity, ease: "linear" }}
-          >
-            <Flame className="h-10 w-10" />
-          </motion.div>
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Phoenix Console</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Establishing a secure session and preparing the live discovery feed.
-            </p>
-          </div>
-        </motion.div>
-        <Toaster position="top-center" richColors />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md rounded-[32px] border border-border/70 bg-card/85 p-8 text-center shadow-2xl shadow-black/10 backdrop-blur-2xl"
-        >
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] bg-destructive/10 text-destructive">
-            <Flame className="h-10 w-10" />
-          </div>
-          <h2 className="text-2xl font-semibold tracking-tight">Connection error</h2>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">{error}</p>
-          <motion.button
-            onClick={() => window.location.reload()}
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20"
-            whileHover={{ scale: 1.02, y: -1 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Retry session
-            <ArrowRight className="h-4 w-4" />
-          </motion.button>
-        </motion.div>
-      </div>
-    );
-  }
+  if (isInitializing) return <LoadingScreen />;
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-background selection:bg-primary/20 selection:text-primary">
-      {/* 2026 Spatial Background: Grain + Ambient Depth */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] brightness-100 contrast-150" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(34,197,94,0.15),transparent_70%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_100%,rgba(56,189,248,0.08),transparent_50%)]" />
+    <div className="min-h-screen bg-[#050505] text-slate-200 selection:bg-cyan-500/30">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,#111,transparent)]" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+        <div className="absolute inset-0 opacity-[0.03] grayscale bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
       </div>
 
-      {/* Floating Island Header */}
-      <div className="fixed inset-x-0 top-6 z-50 flex justify-center px-4">
-        <motion.header
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex h-14 items-center gap-6 rounded-full border border-white/10 bg-card/40 px-6 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all hover:border-white/20"
-        >
-          <div className="flex items-center gap-3 border-r border-white/10 pr-6">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-              <Flame className="h-4 w-4" />
+      <nav className="sticky top-0 z-[100] border-b border-white/5 bg-black/20 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+              <Flame className="h-5 w-5 text-black" strokeWidth={2.5} />
             </div>
-            <span className="font-mono text-sm font-bold uppercase tracking-widest hidden md:block">Phoenix</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-black uppercase tracking-[0.3em] text-white">Phoenix</span>
+              <span className="text-[10px] font-mono text-emerald-500/80">LIVE_PROTOCOL_V2</span>
+            </div>
           </div>
-          
-          <Sheet>
-            <SheetTrigger asChild className="md:hidden">
-              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10">
-                <Menu className="h-4 w-4" />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="top">
-              <SheetHeader>
-                <SheetTitle>Navigation</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col gap-4 p-4">
-                {[
-                  { label: "Scanner", icon: Search, href: "/" },
-                  { label: "Tester", icon: FlaskConical, href: "/key-tester" },
-                ].map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-xl p-3 text-sm font-bold uppercase tracking-tighter transition-all hover:bg-white/5"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </SheetContent>
-          </Sheet>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {[
-              { label: "Scanner", icon: Search, href: "/", active: true },
-              { label: "Tester", icon: FlaskConical, href: "/key-tester" },
-            ].map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-tighter transition-all hover:bg-white/5",
-                  item.active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3 border-l border-white/10 pl-6">
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex mr-4 h-8 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-bold uppercase tracking-tighter text-slate-400">Stream: Active</span>
+            </div>
             <ThemeToggle />
-            <motion.button
+            <button
               onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10"
-              whileTap={{ scale: 0.9 }}
+              className={cn("p-2 rounded-lg hover:bg-white/5 transition-colors", isRefreshing && "animate-spin")}
             >
-              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
-            </motion.button>
+              <RefreshCw className="h-4 w-4" />
+            </button>
           </div>
-        </motion.header>
-      </div>
+        </div>
+      </nav>
 
-      <main className="mx-auto max-w-7xl px-4 pt-32 pb-24 md:px-8">
-        {/* Typographic Hero */}
-        <section className="mb-12">
+      <main className="relative z-10 mx-auto max-w-7xl px-6 py-12">
+        <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-12">
+
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-start gap-4"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="group relative col-span-1 flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-[#0a0a0a] p-8 md:col-span-8"
           >
-            <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary"></span>
-              </span>
-              Live discovery feed
-            </div>
-            <h1 className="max-w-3xl font-sans text-5xl font-bold tracking-[-0.04em] md:text-7xl">
-              Exposure <span className="text-muted-foreground/40 italic font-medium">intelligence.</span>
-            </h1>
-            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
-              Real-time surveillance of leaked API credentials. Validated findings, provider telemetry, and source references consolidated into a spatial workspace.
-            </p>
-          </motion.div>
-        </section>
-
-        <section className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 xl:grid-cols-6">
-          {[
-            {
-              label: "Total credentials",
-              value: stats?.total_keys ?? 0,
-              icon: Key,
-              accent: "from-primary/20 to-emerald-400/20",
-              type: "number" as const,
-            },
-            {
-              label: "Valid keys",
-              value: stats?.valid_keys ?? 0,
-              icon: Shield,
-              accent: "from-emerald-500/20 to-lime-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Invalid findings",
-              value: stats?.invalid_keys ?? 0,
-              icon: AlertTriangle,
-              accent: "from-rose-500/20 to-orange-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Active providers",
-              value: providerCount,
-              icon: Activity,
-              accent: "from-sky-500/20 to-cyan-300/20",
-              type: "number" as const,
-            },
-            {
-              label: "Last validated",
-              value: formatTimestamp(stats?.last_validated_at),
-              icon: Clock,
-              accent: "from-violet-500/20 to-purple-300/20",
-              type: "text" as const,
-            },
-            {
-              label: "Last scraped",
-              value: formatTimestamp(stats?.last_scraped_at),
-              icon: Database,
-              accent: "from-cyan-500/20 to-blue-300/20",
-              type: "text" as const,
-            },
-          ].map((item, index) => (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.06 * index }}
-              className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl"
-            >
-              <div className={cn("absolute inset-0 bg-gradient-to-br", item.accent)} />
-              <div className="relative">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">{item.label}</p>
-                    <div className={cn(
-                      "mt-3 font-semibold tracking-tight",
-                      item.type === "number" ? "text-3xl tabular-nums" : "text-xl"
-                    )}>
-                      {item.value}
-                    </div>
-                  </div>
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background/80 text-primary shadow-sm">
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                </div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-emerald-500">
+                <TrendingUp className="h-4 w-4" />
+                <span className="text-xs font-black uppercase tracking-widest">Surveillance Summary</span>
               </div>
-            </motion.div>
-          ))}
-        </section>
-
-        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-            <div className="mb-4">
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                Recent Visits (phoenix-scraper)
+              <h1 className="mt-4 text-5xl font-black tracking-tighter text-white md:text-7xl">
+                {stats?.total_keys?.toLocaleString()} <span className="text-slate-700">Exploits.</span>
+              </h1>
+              <p className="mt-4 max-w-md text-slate-400 leading-relaxed font-medium">
+                Automated credential discovery active. Consolidating leaks across <span className="text-white">GitHub, GitLab, and S3 buckets</span> into a unified mercury-grade feed.
               </p>
             </div>
-            <div className="space-y-2">
-              {isLoadingVisits ? (
-                <div className="animate-pulse h-10 bg-muted rounded-2xl" />
-              ) : visits.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No recent visits</p>
-              ) : (
-                visits.map((visit) => (
-                  <div key={visit.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {visit.country_code}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{visit.country}</p>
-                        <p className="text-xs text-muted-foreground">{visit.ip}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {new Date(visit.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-        </section>
 
-        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
-          <div className="mb-4">
-            <div className="flex items-center justify-between">
+            <div className="relative z-10 mt-12 flex flex-wrap gap-8">
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
-                  Search & Filter
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Search keys or filter by provider and status
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Valid Rate</span>
+                <p className="text-2xl font-black text-emerald-400">
+                  {stats ? Math.round((stats.valid_keys / stats.total_keys) * 100) : 0}%
                 </p>
               </div>
-              {selectedProvider && (
-                <motion.button
-                  onClick={() => handleProviderFilter(null)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Clear filter
-                </motion.button>
-              )}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Nodes</span>
+                <p className="text-2xl font-black text-white">{Object.keys(stats?.by_provider || {}).length}</p>
+              </div>
+              <div className="flex-1" />
+              <button onClick={downloadCSV} className="flex items-center gap-2 self-end rounded-full bg-white px-6 py-3 text-xs font-black uppercase text-black transition-transform hover:scale-105 active:scale-95">
+                <Download className="h-4 w-4" /> Export Data
+              </button>
             </div>
-          </div>
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-emerald-500/10 blur-[100px] transition-colors group-hover:bg-emerald-500/20" />
+          </motion.div>
 
-          {stats?.by_provider && Object.keys(stats.by_provider).length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
-              {Object.entries(stats.by_provider)
-                .sort(([, a], [, b]) => b - a)
-                .map(([provider, count]) => (
-                  <motion.button
-                    key={provider}
-                    onClick={() => handleProviderFilter(selectedProvider === provider ? null : provider)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
-                      selectedProvider === provider
-                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                        : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
-                    )}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                  >
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      selectedProvider === provider ? "bg-primary-foreground" : `bg-gradient-to-br ${getProviderTone(provider)}`
-                    )} />
-                    <span>{provider}</span>
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-                      selectedProvider === provider
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      {count}
-                    </span>
-                  </motion.button>
-                ))}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+            className="col-span-1 rounded-[2rem] border border-white/10 bg-gradient-to-b from-[#0a0a0a] to-black p-8 md:col-span-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-cyan-400">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div className="rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase text-emerald-500">
+                Top Region
+              </div>
             </div>
-          )}
 
-          <FilterBar
-            providers={Object.entries(stats?.by_provider ?? {}).map(([name, count]) => ({ name, count }))}
-            selectedProvider={selectedProvider ?? ""}
-            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
-            onProviderChange={(provider) => handleProviderFilter(provider || null)}
-            onStatusChange={(status) => {
-              const map: Record<string, string | null> = {
-                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
-              };
-              handleStatusFilter(map[status] ?? null);
-            }}
-            searchQuery={searchQuery}
-            onSearchChange={(query) => {
-              setSearchQuery(query);
-              setCurrentPage(1);
-            }}
-          />
-        </section>
-
-        <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
-          <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Overview</p>
-              <div className="mt-8 grid grid-cols-2 gap-8">
-                <div>
-                  <p className="text-4xl font-bold tabular-nums tracking-tighter">{stats?.valid_keys ?? 0}</p>
-                  <p className="mt-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-500">
-                    <Shield className="h-3 w-3" /> Validated
-                  </p>
+            <div className="mt-8">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Origin Insight</span>
+              <h2 className="mt-2 text-4xl font-black tracking-tighter text-white">
+                {topCountryStats?.name || "Detecting..."}
+              </h2>
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-xs text-slate-400 font-medium">Traffic Density</span>
+                  <span className="text-xs font-mono text-white">{topCountryStats?.count} visits</span>
                 </div>
-                <div>
-                  <p className="text-4xl font-bold tabular-nums tracking-tighter">{stats?.total_keys ?? 0}</p>
-                  <p className="mt-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    <Key className="h-3 w-3" /> Scan Total
-                  </p>
+                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                  <span className="text-xs text-slate-400 font-medium">Peak Activity</span>
+                  <span className="text-xs font-mono text-cyan-400">{topCountryStats?.peakTime || "--:--"}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400 font-medium">Risk Level</span>
+                  <span className="text-xs font-bold text-rose-500">CRITICAL</span>
                 </div>
               </div>
             </div>
-            <div className="mt-12 space-y-4">
-              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <span>Discovery rate</span>
-                <span className="text-primary">+12.5%</span>
-              </div>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-white/5">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: "65%" }}
-                  className="h-full bg-primary" 
-                />
-              </div>
-            </div>
+          </motion.div>
+        </div>
+
+        <div className="mb-12 overflow-x-auto pb-4 no-scrollbar">
+          <div className="flex gap-3">
+            {stats?.by_provider && Object.entries(stats.by_provider).map(([name, count], i) => (
+              <motion.button
+                key={name}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                onClick={() => setSelectedProvider(selectedProvider === name ? null : name)}
+                className={cn(
+                  "flex min-w-[140px] flex-col gap-4 rounded-2xl border p-4 transition-all duration-300",
+                  selectedProvider === name
+                    ? "border-emerald-500 bg-emerald-500/10 text-white"
+                    : "border-white/5 bg-[#0a0a0a] hover:border-white/20"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                   <Cpu className={cn("h-4 w-4", selectedProvider === name ? "text-emerald-400" : "text-slate-600")} />
+                   <span className="font-mono text-[10px] font-bold opacity-40">#{i + 1}</span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{name}</p>
+                  <p className="text-xl font-black">{count}</p>
+                </div>
+              </motion.button>
+            ))}
           </div>
+        </div>
 
-          {stats?.by_provider && Object.keys(stats.by_provider).length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
-              {Object.entries(stats.by_provider)
-                .sort(([, a], [, b]) => b - a)
-                .map(([provider, count]) => (
-                  <motion.button
-                    key={provider}
-                    onClick={() => handleProviderFilter(selectedProvider === provider ? null : provider)}
-                    className={cn(
-                      "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
-                      selectedProvider === provider
-                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                        : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
-                    )}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                  >
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      selectedProvider === provider ? "bg-primary-foreground" : `bg-gradient-to-br ${getProviderTone(provider)}`
-                    )} />
-                    <span>{provider}</span>
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
-                      selectedProvider === provider
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      {count}
-                    </span>
-                  </motion.button>
-                ))}
-            </div>
-          )}
+        <div className="mb-10 flex flex-col gap-6 md:flex-row md:items-center">
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Query key index or fingerprint..."
+              className="w-full rounded-2xl border border-white/5 bg-[#0a0a0a] py-4 pl-12 pr-4 text-sm font-medium outline-none transition-all focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2">
+            {['Valid', 'Invalid', 'Pending'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setSelectedStatus(selectedStatus === s ? null : s)}
+                className={cn(
+                  "rounded-xl border px-6 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                  selectedStatus === s
+                    ? "border-white bg-white text-black"
+                    : "border-white/5 bg-[#0a0a0a] hover:bg-white/5"
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          <FilterBar
-            providers={Object.entries(stats?.by_provider ?? {}).map(([name, count]) => ({ name, count }))}
-            selectedProvider={selectedProvider ?? ""}
-            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
-            onProviderChange={(provider) => handleProviderFilter(provider || null)}
-            onStatusChange={(status) => {
-              const map: Record<string, string | null> = {
-                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
-              };
-              handleStatusFilter(map[status] ?? null);
-            }}
-            searchQuery={searchQuery}
-            onSearchChange={(query) => {
-              setSearchQuery(query);
-              setCurrentPage(1);
-            }}
-          />
-        </section>
-
-        {/* Stream Section */}
         <section>
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Activity Stream</p>
-              <h2 className="mt-2 text-2xl font-bold tracking-tight">Real-time findings</h2>
-            </div>
-            <div className="flex items-center gap-3">
-               <button 
-                 onClick={downloadCSV}
-                 className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-white/10"
-               >
-                 <Download className="h-3 w-3" /> Export_CSV
-               </button>
-            </div>
-          </div>
-
           {isLoadingKeys ? (
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-48 animate-pulse rounded-[32px] border border-white/5 bg-white/5" />
+                <div key={i} className="h-64 animate-pulse rounded-[2rem] bg-white/[0.02]" />
               ))}
             </div>
           ) : (
-            <AnimatePresence mode="popLayout">
+            <>
               <motion.div
-                key="stream-grid"
-                className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                layout
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
               >
-                {(keys ?? []).map((key, index) => (
-                  <KeyCard
-                    key={key.id}
-                    index={index}
-                    keyData={{
-                      ...key,
-                      repo_refs: key.references?.map((ref) => ref.file_url) ?? [],
-                    } as ApiKey}
-                  />
-                ))}
+                <AnimatePresence mode="popLayout">
+                  {keys.map((key, i) => (
+                    <motion.div
+                      key={key.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.4, delay: i * 0.05 }}
+                    >
+                      <KeyCard
+                         keyData={{...key, repo_refs: key.references?.map(r => r.file_url) || []} as ApiKey}
+                         index={i}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </motion.div>
 
               {totalPages > 1 && (
-                <div key="pagination" className="mt-12 flex items-center justify-center gap-1">
+                <div className="mt-20 flex items-center justify-center gap-8">
                   <button
-                    onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 transition-all hover:bg-white/5 disabled:opacity-20"
+                    onClick={() => setCurrentPage(p => p - 1)}
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/5 bg-[#0a0a0a] transition-all hover:bg-white hover:text-black disabled:opacity-20"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="h-6 w-6" />
                   </button>
-                  <div className="flex items-center gap-1 px-4">
-                    <span className="font-mono text-xs font-bold">{currentPage}</span>
-                    <span className="font-mono text-[10px] text-muted-foreground/40">/</span>
-                    <span className="font-mono text-xs text-muted-foreground/60">{totalPages}</span>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Segment</p>
+                    <p className="text-xl font-black text-white">{currentPage} <span className="text-slate-700">/</span> {totalPages}</p>
                   </div>
                   <button
-                    onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 transition-all hover:bg-white/5 disabled:opacity-20"
+                    onClick={() => setCurrentPage(p => p + 1)}
+                    className="flex h-14 w-14 items-center justify-center rounded-full border border-white/5 bg-[#0a0a0a] transition-all hover:bg-white hover:text-black disabled:opacity-20"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-6 w-6" />
                   </button>
                 </div>
               )}
-            </AnimatePresence>
+            </>
           )}
         </section>
       </main>
 
-      <footer className="py-12 text-center">
-        <p className="font-mono text-[9px] font-bold uppercase tracking-[0.4em] text-muted-foreground/30">
-          Phoenix · Secure Console v2.0.26
-        </p>
+      <footer className="mt-20 border-t border-white/5 py-12">
+        <div className="mx-auto max-w-7xl px-6 text-center">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.5em] text-slate-600">
+            Internal Use Only · Phoenix Console V2.2026.1
+          </p>
+        </div>
       </footer>
 
       <Toaster position="bottom-right" theme="dark" richColors />
     </div>
   );
+}
 
+function LoadingScreen() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#050505]">
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 90, 0] }}
+        transition={{ duration: 4, repeat: Infinity }}
+        className="relative flex h-24 w-24 items-center justify-center"
+      >
+        <div className="absolute inset-0 rounded-3xl bg-emerald-500/20 blur-2xl" />
+        <Fingerprint className="h-12 w-12 text-emerald-500" strokeWidth={1} />
+      </motion.div>
+      <p className="mt-8 font-mono text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/50">
+        Initializing_Spatial_Interface
+      </p>
+    </div>
+  );
 }
