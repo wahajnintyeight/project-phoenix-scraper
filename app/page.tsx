@@ -443,14 +443,193 @@ export default function KeyScannerPage() {
           </motion.div>
         </section>
 
-        {/* Command Bento: The Core Interface */}
-        <section className="mb-16 grid grid-cols-1 gap-4 md:grid-cols-4 md:grid-rows-2">
-          {/* Main Stats Bento */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="col-span-1 row-span-2 flex flex-col justify-between rounded-[32px] border border-white/5 bg-card/20 p-8 backdrop-blur-xl md:col-span-2"
-          >
+        <section className="mt-6 grid gap-4 md:mt-8 md:grid-cols-2 xl:grid-cols-6">
+          {[
+            {
+              label: "Total credentials",
+              value: stats?.total_keys ?? 0,
+              icon: Key,
+              accent: "from-primary/20 to-emerald-400/20",
+              type: "number" as const,
+            },
+            {
+              label: "Valid keys",
+              value: stats?.valid_keys ?? 0,
+              icon: Shield,
+              accent: "from-emerald-500/20 to-lime-300/20",
+              type: "number" as const,
+            },
+            {
+              label: "Invalid findings",
+              value: stats?.invalid_keys ?? 0,
+              icon: AlertTriangle,
+              accent: "from-rose-500/20 to-orange-300/20",
+              type: "number" as const,
+            },
+            {
+              label: "Active providers",
+              value: providerCount,
+              icon: Activity,
+              accent: "from-sky-500/20 to-cyan-300/20",
+              type: "number" as const,
+            },
+            {
+              label: "Last validated",
+              value: formatTimestamp(stats?.last_validated_at),
+              icon: Clock,
+              accent: "from-violet-500/20 to-purple-300/20",
+              type: "text" as const,
+            },
+            {
+              label: "Last scraped",
+              value: formatTimestamp(stats?.last_scraped_at),
+              icon: Database,
+              accent: "from-cyan-500/20 to-blue-300/20",
+              type: "text" as const,
+            },
+          ].map((item, index) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.06 * index }}
+              className="relative overflow-hidden rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl"
+            >
+              <div className={cn("absolute inset-0 bg-gradient-to-br", item.accent)} />
+              <div className="relative">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{item.label}</p>
+                    <div className={cn(
+                      "mt-3 font-semibold tracking-tight",
+                      item.type === "number" ? "text-3xl tabular-nums" : "text-xl"
+                    )}>
+                      {item.value}
+                    </div>
+                  </div>
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background/80 text-primary shadow-sm">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </section>
+
+        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
+            <div className="mb-4">
+              <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
+                Recent Visits (phoenix-scraper)
+              </p>
+            </div>
+            <div className="space-y-2">
+              {isLoadingVisits ? (
+                <div className="animate-pulse h-10 bg-muted rounded-2xl" />
+              ) : visits.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No recent visits</p>
+              ) : (
+                visits.map((visit) => (
+                  <div key={visit.id} className="flex items-center justify-between p-3 rounded-xl bg-background/50 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {visit.country_code}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{visit.country}</p>
+                        <p className="text-xs text-muted-foreground">{visit.ip}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {new Date(visit.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+        </section>
+
+        <section className="mt-6 rounded-[28px] border border-border/70 bg-card/75 p-5 shadow-xl shadow-black/5 backdrop-blur-2xl md:mt-8">
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.24em] text-primary/80">
+                  Search & Filter
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Search keys or filter by provider and status
+                </p>
+              </div>
+              {selectedProvider && (
+                <motion.button
+                  onClick={() => handleProviderFilter(null)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Clear filter
+                </motion.button>
+              )}
+            </div>
+          </div>
+
+          {stats?.by_provider && Object.keys(stats.by_provider).length > 0 && (
+            <div className="mb-6 flex flex-wrap gap-2">
+              {Object.entries(stats.by_provider)
+                .sort(([, a], [, b]) => b - a)
+                .map(([provider, count]) => (
+                  <motion.button
+                    key={provider}
+                    onClick={() => handleProviderFilter(selectedProvider === provider ? null : provider)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
+                      selectedProvider === provider
+                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
+                    )}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <div className={cn(
+                      "h-2 w-2 rounded-full",
+                      selectedProvider === provider ? "bg-primary-foreground" : `bg-gradient-to-br ${getProviderTone(provider)}`
+                    )} />
+                    <span>{provider}</span>
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                      selectedProvider === provider
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {count}
+                    </span>
+                  </motion.button>
+                ))}
+            </div>
+          )}
+
+          <FilterBar
+            providers={Object.entries(stats?.by_provider ?? {}).map(([name, count]) => ({ name, count }))}
+            selectedProvider={selectedProvider ?? ""}
+            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
+            onProviderChange={(provider) => handleProviderFilter(provider || null)}
+            onStatusChange={(status) => {
+              const map: Record<string, string | null> = {
+                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
+              };
+              handleStatusFilter(map[status] ?? null);
+            }}
+            searchQuery={searchQuery}
+            onSearchChange={(query) => {
+              setSearchQuery(query);
+              setCurrentPage(1);
+            }}
+          />
+        </section>
+
+        <section className="mt-8 rounded-[32px] border border-border/70 bg-card/75 p-4 shadow-2xl shadow-black/5 backdrop-blur-2xl md:p-6">
+          <div className="mb-6 flex flex-col gap-4 border-b border-border/60 pb-5 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Overview</p>
               <div className="mt-8 grid grid-cols-2 gap-8">

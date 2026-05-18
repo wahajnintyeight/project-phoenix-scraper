@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Search, Filter, X } from "lucide-react";
 
 interface FilterBarProps {
-  providers: string[];
+  providers: { name: string; count: number }[];
   selectedProvider: string;
   selectedStatus: string;
   onProviderChange: (provider: string) => void;
@@ -71,8 +71,8 @@ export function FilterBar({
           >
             <option value="">All Providers</option>
             {providers.map((provider) => (
-              <option key={provider} value={provider}>
-                {provider}
+              <option key={provider.name} value={provider.name}>
+                {provider.name} ({provider.count})
               </option>
             ))}
           </select>
