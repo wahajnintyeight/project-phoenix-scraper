@@ -423,19 +423,19 @@ export function CurlPlayground() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
+        className="rounded-[2rem] border border-white/10 bg-[#0a0a0a] p-8 shadow-xl"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground">
-              Restricted curl input
+            <label className="block font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/40">
+              CURL_REPLAY
             </label>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-xs text-slate-400 leading-relaxed">
               Paste a provider curl and replay it in the browser with `fetch`. The command must reference a supported AI provider and an allowlisted HTTPS host.
             </p>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground shadow-sm">
-            <Shield className="h-3.5 w-3.5 text-primary" />
+          <div className="hidden sm:inline-flex shrink-0 items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-500">
+            <Shield className="h-3.5 w-3.5" />
             Client-side only
           </div>
         </div>
@@ -447,10 +447,10 @@ export function CurlPlayground() {
               <span
                 key={provider.id}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] transition-all",
+                  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] transition-all",
                   active
-                    ? "border-primary/30 bg-primary/10 text-foreground"
-                    : "border-border/70 bg-background/60 text-muted-foreground"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-slate-200"
+                    : "border-white/5 bg-[#0a0a0a] text-slate-500"
                 )}
               >
                 <span className={cn("h-2 w-2 rounded-full bg-gradient-to-br", provider.tone)} />
@@ -459,13 +459,13 @@ export function CurlPlayground() {
             );
           })}
           {isBlockedByRule && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-rose-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-rose-500">
               <ShieldOff className="h-3 w-3" />
               Blocked: {isBlockedByRule.pattern}
             </span>
           )}
           {blockedRules.length > 0 && !isBlockedByRule && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-500">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-500">
               <Shield className="h-3 w-3" />
               {blockedRules.length} rule{blockedRules.length > 1 ? "s" : ""} active
             </span>
@@ -481,12 +481,12 @@ export function CurlPlayground() {
             }
           }}
           spellCheck={false}
-          className="min-h-[18rem] w-full rounded-[24px] border border-border/60 bg-background/70 p-4 font-mono text-xs leading-6 text-foreground outline-none placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+          className="min-h-[18rem] w-full rounded-2xl border border-white/5 bg-[#050505] p-5 font-mono text-xs leading-6 text-slate-200 outline-none placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5"
           placeholder="Paste a provider curl here…"
         />
 
         <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-500">
             Browser fetch is subject to provider CORS policies. If the provider blocks cross-origin requests, the request will fail even if the curl is valid.
           </p>
 
@@ -494,18 +494,18 @@ export function CurlPlayground() {
             onClick={handleRun}
             disabled={result.status === "loading"}
             className={cn(
-              "inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-lg transition-all",
+              "inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-xs font-black uppercase tracking-widest transition-all",
               result.status === "loading"
-                ? "cursor-not-allowed bg-muted text-muted-foreground shadow-none"
-                : "bg-primary text-primary-foreground shadow-primary/20 hover:opacity-90"
+                ? "cursor-not-allowed bg-white/5 text-slate-600"
+                : "bg-white text-black hover:scale-105 active:scale-95"
             )}
-            whileHover={result.status === "loading" ? {} : { y: -1 }}
+            whileHover={result.status === "loading" ? {} : {}}
             whileTap={result.status === "loading" ? {} : { scale: 0.98 }}
           >
             {result.status === "loading" ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Replaying curl…
+                Replaying…
               </>
             ) : (
               <>
@@ -538,10 +538,10 @@ function AnimateResult({
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-[28px] border border-border/70 bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl"
+        className="rounded-[2rem] border border-white/10 bg-[#0a0a0a] p-8 shadow-xl"
       >
-        <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <div className="flex items-center gap-3 text-sm font-medium text-slate-400">
+          <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
           Waiting for provider response…
         </div>
       </motion.div>
@@ -553,7 +553,7 @@ function AnimateResult({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-[28px] border bg-card/80 p-5 shadow-lg shadow-black/5 backdrop-blur-2xl",
+        "rounded-[2rem] border bg-[#0a0a0a] p-8 shadow-xl",
         result.ok ? "border-emerald-500/20" : "border-rose-500/20"
       )}
     >
@@ -565,11 +565,11 @@ function AnimateResult({
             ) : (
               <AlertTriangle className="h-4 w-4 text-rose-500" />
             )}
-            <p className="text-sm font-semibold tracking-tight">
+            <p className="text-sm font-bold text-slate-200">
               {result.provider} response {result.statusCode ? `(${result.statusCode})` : ""}
             </p>
           </div>
-          <p className="mt-2 break-all font-mono text-[11px] text-muted-foreground">
+          <p className="mt-2 break-all font-mono text-[11px] text-slate-500">
             {result.url}
           </p>
           {result.error && (
@@ -581,7 +581,7 @@ function AnimateResult({
 
         <button
           onClick={() => void onCopy()}
-          className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
+          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-400 transition-all hover:bg-white/10 hover:text-white"
         >
           <Copy className="h-3.5 w-3.5" />
           Copy output
@@ -589,14 +589,14 @@ function AnimateResult({
       </div>
 
       {result.responseHeaders.length > 0 && (
-        <div className="mt-5 rounded-[20px] border border-border/60 bg-background/60 p-4">
-          <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        <div className="mt-5 rounded-2xl border border-white/5 bg-[#050505] p-4">
+          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
             Response headers
           </p>
-          <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+          <div className="grid gap-2 text-xs text-slate-400 md:grid-cols-2">
             {result.responseHeaders.map(([key, value]) => (
-              <div key={`${key}-${value}`} className="rounded-xl border border-border/40 bg-background/60 px-3 py-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/80">
+              <div key={`${key}-${value}`} className="rounded-xl border border-white/5 bg-[#0a0a0a] px-3 py-2.5">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">
                   {key}
                 </span>
                 <p className="mt-1 break-all font-mono text-[11px] leading-5">
@@ -608,11 +608,11 @@ function AnimateResult({
         </div>
       )}
 
-      <div className="mt-5 rounded-[20px] border border-border/60 bg-background/60 p-4">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="mt-5 rounded-2xl border border-white/5 bg-[#050505] p-4">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
           Response body
         </p>
-        <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-6 text-foreground/90">
+        <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-6 text-slate-300 scrollbar-none">
           {result.responseBody || "No response body returned."}
         </pre>
       </div>
