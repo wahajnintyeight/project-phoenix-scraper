@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import {
   Flame,
   FlaskConical,
+  Menu,
   Key,
   Play,
   RotateCcw,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   PROVIDERS,
   ProviderId,
@@ -468,12 +470,40 @@ export default function KeyTesterPage() {
           animate={{ y: 0, opacity: 1 }}
           className="flex h-14 items-center gap-6 rounded-full border border-white/10 bg-card/40 px-6 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl transition-all hover:border-white/20"
         >
-          <div className="flex items-center gap-3 border-r border-white/10 pr-6">
+          <div className="flex items-center gap-3 border-r border-white/10 pr-4 md:pr-6">
             <Link href="/" className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]">
               <FlaskConical className="h-4 w-4" />
             </Link>
-            <span className="font-mono text-sm font-bold uppercase tracking-widest">Tester</span>
+            <span className="hidden font-mono text-sm font-bold uppercase tracking-widest md:block">Tester</span>
           </div>
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10 md:hidden">
+                <Menu className="h-4 w-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="top">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4 p-4">
+                {[
+                  { label: "Scanner", icon: Search, href: "/" },
+                  { label: "Tester", icon: FlaskConical, href: "/key-tester" },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-xl p-3 text-sm font-bold uppercase tracking-tighter transition-all hover:bg-white/5"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
 
           <nav className="hidden items-center gap-1 md:flex">
             {[
@@ -494,7 +524,7 @@ export default function KeyTesterPage() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3 border-l border-white/10 pl-6">
+          <div className="flex items-center gap-3 border-l border-white/10 pl-4 md:pl-6">
             <ThemeToggle />
             {hasResults && (
               <motion.button

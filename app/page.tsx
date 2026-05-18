@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
+  Menu,
   Flame,
   RefreshCw,
   Sparkles,
@@ -44,6 +45,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { FilterBar } from "@/components/filter-bar";
 import { KeyCard } from "@/components/key-card";
 
@@ -353,8 +355,36 @@ export default function KeyScannerPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_0_15px_rgba(34,197,94,0.3)]">
               <Flame className="h-4 w-4" />
             </div>
-            <span className="font-mono text-sm font-bold uppercase tracking-widest">Phoenix</span>
+            <span className="font-mono text-sm font-bold uppercase tracking-widest hidden md:block">Phoenix</span>
           </div>
+          
+          <Sheet>
+            <SheetTrigger asChild className="md:hidden">
+              <button className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-white/10">
+                <Menu className="h-4 w-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="top">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-4 p-4">
+                {[
+                  { label: "Scanner", icon: Search, href: "/" },
+                  { label: "Tester", icon: FlaskConical, href: "/key-tester" },
+                ].map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-xl p-3 text-sm font-bold uppercase tracking-tighter transition-all hover:bg-white/5"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </SheetContent>
+          </Sheet>
 
           <nav className="hidden items-center gap-1 md:flex">
             {[
