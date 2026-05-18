@@ -236,7 +236,7 @@ export function TestResultCard({ entry }: TestResultCardProps) {
               </p>
             </div>
           )}
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );

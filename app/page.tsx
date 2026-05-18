@@ -660,63 +660,62 @@ export default function KeyScannerPage() {
                 />
               </div>
             </div>
-          </motion.div>
-
-          {/* Search & Filter Bento */}
-          <div className="col-span-1 rounded-[32px] border border-white/5 bg-card/20 p-6 backdrop-blur-xl md:col-span-2">
-            <div className="flex h-full flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Filters</p>
-                <div className="flex gap-2">
-                   <div className="h-2 w-2 rounded-full bg-emerald-500/20" />
-                   <div className="h-2 w-2 rounded-full bg-primary/40" />
-                </div>
-              </div>
-              <div className="mt-4">
-                <FilterBar
-                  providers={Object.keys(stats?.by_provider ?? {})}
-                  selectedProvider={selectedProvider ?? ""}
-                  selectedStatus={selectedStatus?.toLowerCase() ?? ""}
-                  onProviderChange={(provider) => handleProviderFilter(provider || null)}
-                  onStatusChange={(status) => {
-                    const map: Record<string, string | null> = {
-                      "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
-                    };
-                    handleStatusFilter(map[status] ?? null);
-                  }}
-                  searchQuery={searchQuery}
-                  onSearchChange={(query) => {
-                    setSearchQuery(query);
-                    setCurrentPage(1);
-                  }}
-                />
-              </div>
-            </div>
           </div>
 
-          {/* Telemetry / Visits Bento */}
-          <div className="col-span-1 rounded-[32px] border border-white/5 bg-card/20 p-6 backdrop-blur-xl md:col-span-2">
-            <div className="flex h-full flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">Telemetry</p>
-                <span className="font-mono text-[9px] text-muted-foreground/30">NORD_STRM_v2.6</span>
-              </div>
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {isLoadingVisits ? (
-                  <div className="flex gap-2">
-                    {[1, 2, 3].map(i => <div key={i} className="h-10 w-24 animate-pulse rounded-2xl bg-white/5" />)}
-                  </div>
-                ) : (
-                  visits.slice(0, 4).map((visit) => (
-                    <div key={visit.id} className="flex shrink-0 items-center gap-3 rounded-2xl border border-white/5 bg-white/5 px-4 py-2">
-                      <span className="font-mono text-[10px] font-bold text-primary">{visit.country_code}</span>
-                      <span className="font-mono text-[9px] text-muted-foreground tabular-nums">{visit.ip.split('.').slice(-2).join('.')}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+          {stats?.by_provider && Object.keys(stats.by_provider).length > 0 && (
+            <div className="mb-6 flex flex-wrap gap-2">
+              {Object.entries(stats.by_provider)
+                .sort(([, a], [, b]) => b - a)
+                .map(([provider, count]) => (
+                  <motion.button
+                    key={provider}
+                    onClick={() => handleProviderFilter(selectedProvider === provider ? null : provider)}
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-all",
+                      selectedProvider === provider
+                        ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                        : "border-border/70 bg-background/80 text-foreground hover:bg-muted hover:border-primary/50"
+                    )}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <div className={cn(
+                      "h-2 w-2 rounded-full",
+                      selectedProvider === provider ? "bg-primary-foreground" : `bg-gradient-to-br ${getProviderTone(provider)}`
+                    )} />
+                    <span>{provider}</span>
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                      selectedProvider === provider
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    )}>
+                      {count}
+                    </span>
+                  </motion.button>
+                ))}
             </div>
-          </div>
+          )}
+
+          <FilterBar
+            providers={Object.entries(stats?.by_provider ?? {}).map(([name, count]) => ({ name, count }))}
+            selectedProvider={selectedProvider ?? ""}
+            selectedStatus={selectedStatus?.toLowerCase() ?? ""}
+            onProviderChange={(provider) => handleProviderFilter(provider || null)}
+            onStatusChange={(status) => {
+              const map: Record<string, string | null> = {
+                "": null, valid: "Valid", invalid: "Invalid", pending: "Pending", error: "Error"
+              };
+              handleStatusFilter(map[status] ?? null);
+            }}
+            searchQuery={searchQuery}
+            onSearchChange={(query) => {
+              setSearchQuery(query);
+              setCurrentPage(1);
+            }}
+          />
         </section>
 
         {/* Stream Section */}
