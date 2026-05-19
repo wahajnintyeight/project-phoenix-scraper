@@ -321,7 +321,7 @@ export default function KeyScannerPage() {
             />
           </div>
           <div className="flex gap-2">
-            {['Valid', 'Invalid', 'Pending'].map((s) => (
+            {['Valid', 'Invalid'].map((s) => (
               <button
                 key={s}
                 onClick={() => setSelectedStatus(selectedStatus === s ? null : s)}
