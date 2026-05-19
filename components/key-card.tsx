@@ -111,6 +111,12 @@ const providerConfig: Record<
     soft: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
     text: "text-indigo-500",
   },
+  "z.ai": {
+    primary: "bg-cyan-500",
+    glow: "shadow-cyan-500/20",
+    soft: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
+    text: "text-cyan-500",
+  },
   default: {
     primary: "bg-zinc-500",
     glow: "shadow-zinc-500/20",

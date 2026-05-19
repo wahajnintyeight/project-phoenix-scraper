@@ -47,6 +47,13 @@ export const PROVIDERS = [
     defaultModel: "deepseek-chat",
     supportsModel: true,
   },
+  {
+    id: "Z.AI",
+    label: "Z.AI",
+    gradient: "from-cyan-400 to-teal-500",
+    defaultModel: "glm-5.1",
+    supportsModel: true,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
