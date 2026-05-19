@@ -101,7 +101,7 @@ export default function KeyScannerPage() {
       ]);
       if (statsRes.code === 1009) setStats(statsRes.result);
       if (keysRes.code === 1009) {
-        setKeys(keysRes.result.keys);
+        setKeys(keysRes.result.keys || []);
         setTotalPages(keysRes.result.total_pages || 1);
       }
     } finally {
@@ -119,6 +119,10 @@ export default function KeyScannerPage() {
       setIsLoadingVisits(false);
     }
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedProvider, selectedStatus, debouncedSearch]);
 
   useEffect(() => {
     if (!isInitializing && !error) {
