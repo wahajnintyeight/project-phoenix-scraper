@@ -216,6 +216,19 @@ export async function fetchValidKeys(): Promise<ValidKeysResponse> {
   return authenticatedFetch<ValidKeysResponse>("/keys/valid");
 }
 
+export interface KeyReposResponse {
+  code: number;
+  message: string;
+  result: {
+    key_id: string;
+    references: Reference[];
+  };
+}
+
+export async function fetchKeyRepos(keyId: string): Promise<KeyReposResponse> {
+  return authenticatedFetch<KeyReposResponse>(`/keys/repos?id=${encodeURIComponent(keyId)}`);
+}
+
 export async function fetchStats(): Promise<StatsResponse> {
   return authenticatedFetch<StatsResponse>("/stats");
 }

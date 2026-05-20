@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { ApiKey, fetchDeepSeekBalance, type DeepSeekBalance } from "@/lib/api";
+import { ApiKey, fetchDeepSeekBalance, fetchKeyRepos, type DeepSeekBalance, type Reference } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
@@ -131,6 +131,9 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
   const [isRevealed, setIsRevealed] = useState(false);
   const [deepSeekBalance, setDeepSeekBalance] = useState<DeepSeekBalance | null>(null);
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
+  const [repos, setRepos] = useState<Reference[] | null>(null);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [reposError, setReposError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -172,6 +175,29 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
       });
     } finally {
       setIsCheckingBalance(false);
+    }
+  };
+
+  const fetchRepos = async () => {
+    if (!keyData.id) return;
+    setIsLoadingRepos(true);
+    setReposError(null);
+    try {
+      const res = await fetchKeyRepos(keyData.id);
+      if (res.code === 1009) {
+        setRepos(res.result.references);
+        if (res.result.references.length === 0) {
+          toast.info("No source repositories found for this key");
+        }
+      } else {
+        throw new Error(res.message || "Failed to fetch repos");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Request failed";
+      setReposError(msg);
+      toast.error("Repo fetch failed", { description: msg });
+    } finally {
+      setIsLoadingRepos(false);
     }
   };
 
@@ -417,27 +443,69 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                       </div>
                     )}
 
-                    {keyData.repo_refs && keyData.repo_refs.length > 0 && (
-                      <div className="space-y-3">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                          Source Linkage
+                    {repos === null ? (
+                      <motion.button
+                        onClick={fetchRepos}
+                        disabled={isLoadingRepos}
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-zinc-400 transition-all hover:bg-white/[0.04] hover:text-white disabled:opacity-50"
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                      >
+                        {isLoadingRepos ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4" />
+                        )}
+                        <span className="text-xs font-bold uppercase tracking-widest">
+                          {isLoadingRepos ? "Fetching Sources..." : "Reveal Repo Sources"}
                         </span>
-                        <div className="space-y-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
-                          {keyData.repo_refs.map((ref, i) => (
+                      </motion.button>
+                    ) : repos.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                            Source Linkage ({repos.length})
+                          </span>
+                          <button
+                            onClick={() => setRepos(null)}
+                            className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase tracking-wider"
+                          >
+                            Collapse
+                          </button>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                          {repos.map((ref) => (
                             <a
-                              key={i}
-                              href={ref}
+                              key={ref.id}
+                              href={ref.file_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3 hover:bg-white/[0.04] transition-all"
+                              className="group flex flex-col gap-1 rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3 hover:bg-white/[0.04] transition-all"
                             >
-                              <span className="truncate text-xs font-mono text-zinc-400 group-hover:text-zinc-200">{ref}</span>
-                              <ExternalLink size={14} className="text-zinc-600 group-hover:text-white shrink-0 ml-2" />
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-xs font-medium text-zinc-300 truncate group-hover:text-white">
+                                  {ref.repo_name || ref.repo_url.split('/').pop()}
+                                </span>
+                                <ExternalLink size={14} className="text-zinc-600 group-hover:text-white shrink-0" />
+                              </div>
+                              <span className="text-[10px] font-mono text-zinc-600 truncate">
+                                {ref.file_path || ref.file_url}
+                              </span>
                             </a>
                           ))}
                         </div>
                       </div>
-                    )}
+                    ) : reposError ? (
+                      <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4 text-center">
+                        <p className="text-xs text-rose-400">{reposError}</p>
+                        <button
+                          onClick={fetchRepos}
+                          className="mt-2 text-[10px] text-zinc-500 hover:text-white uppercase tracking-wider"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>

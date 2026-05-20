@@ -362,7 +362,7 @@ export default function KeyScannerPage() {
                       transition={{ duration: 0.4, delay: i * 0.05 }}
                     >
                       <KeyCard
-                         keyData={{...key, repo_refs: key.references?.map(r => r.file_url) || []} as ApiKey}
+                         keyData={key as ApiKey}
                          index={i}
                       />
                     </motion.div>
