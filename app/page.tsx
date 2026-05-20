@@ -94,12 +94,11 @@ export default function KeyScannerPage() {
   const loadData = useCallback(async (page: number = 1, provider: string | null = null, status: string | null = null, search: string = "") => {
     if (!getSessionId()) return;
     setIsLoadingKeys(true);
-    try {
-      const [statsRes, keysRes] = await Promise.all([
-        fetchStats(),
-        fetchKeys(page, provider || undefined, status || undefined, search || undefined)
-      ]);
+    fetchStats().then(statsRes => {
       if (statsRes.code === 1009) setStats(statsRes.result);
+    });
+    try {
+      const keysRes = await fetchKeys(page, provider || undefined, status || undefined, search || undefined);
       if (keysRes.code === 1009) {
         setKeys(keysRes.result.keys || []);
         setTotalPages(keysRes.result.total_pages || 1);
