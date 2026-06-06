@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useRequireAuth } from "@/hooks/use-auth";
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   PROVIDERS,
@@ -253,6 +254,7 @@ function ModelOverrides({
 // ---------------------------------------------------------------------------
 
 export default function KeyTesterPage() {
+  const { ready, authenticated } = useRequireAuth();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"key" | "curl">("key");
@@ -390,6 +392,34 @@ export default function KeyTesterPage() {
     setOpenRouterModelsError(null);
     setOpenRouterModelsLoading(false);
   };
+
+  // ---------------------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------------------
+
+  if (!ready || !authenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex max-w-sm flex-col items-center gap-6 rounded-[32px] border border-border/60 bg-card/80 p-10 text-center shadow-2xl shadow-black/10 backdrop-blur-2xl"
+        >
+          <motion.div
+            className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground shadow-lg"
+            animate={{ rotate: [0, 180, 360], scale: [1, 1.05, 1] }}
+            transition={{ duration: 3.6, repeat: Infinity, ease: "linear" }}
+          >
+            <Flame className="h-10 w-10" />
+          </motion.div>
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Phoenix Console</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Verifying access…</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   // ---------------------------------------------------------------------------
   // Loading / error states

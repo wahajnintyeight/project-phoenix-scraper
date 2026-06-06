@@ -36,8 +36,14 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle";
 import { KeyCard } from "@/components/key-card";
 import Link from "next/link";
+import { useRequireAuth } from "@/hooks/use-auth";
 
 export default function KeyScannerPage() {
+  const { ready, authenticated } = useRequireAuth();
+
+  // Auth guard — redirecting to /login or waiting for check
+  if (!ready || !authenticated) return <LoadingScreen />;
+
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
