@@ -41,9 +41,6 @@ import { useRequireAuth } from "@/hooks/use-auth";
 export default function KeyScannerPage() {
   const { ready, authenticated } = useRequireAuth();
 
-  // Auth guard — redirecting to /login or waiting for check
-  if (!ready || !authenticated) return <LoadingScreen />;
-
   const [isInitializing, setIsInitializing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -155,6 +152,9 @@ export default function KeyScannerPage() {
     a.download = `phoenix_export.csv`;
     a.click();
   };
+
+  // Auth guard — redirecting to /login or waiting for check
+  if (!ready || !authenticated) return <LoadingScreen />;
 
   if (isInitializing) return <LoadingScreen />;
 
