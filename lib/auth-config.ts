@@ -15,7 +15,7 @@
  */
 
 /** SHA-256 hex digest of the correct password. Replace with your own hash. */
-export const PASSWORD_HASH = "PLACEHOLDER_HASH";
+export const PASSWORD_HASH = "780cdf582fff95c5914cd6ad5e62ce063217c2dc7748488f6795d49f6765f589";
 
 /** Name of the cookie used to persist authentication. */
 export const AUTH_COOKIE = "phoenix_auth";
