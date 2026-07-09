@@ -54,6 +54,13 @@ export const PROVIDERS = [
     defaultModel: "glm-5.1",
     supportsModel: true,
   },
+  {
+    id: "xAI",
+    label: "xAI / Grok",
+    gradient: "from-slate-400 to-slate-600",
+    defaultModel: "",
+    supportsModel: false,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
