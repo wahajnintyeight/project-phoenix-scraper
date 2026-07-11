@@ -68,6 +68,41 @@ export const PROVIDERS = [
     defaultModel: "mimo-v2.5-pro",
     supportsModel: true,
   },
+  {
+    id: "MiniMax",
+    label: "MiniMax",
+    gradient: "from-rose-400 to-red-600",
+    defaultModel: "MiniMax-M2.7",
+    supportsModel: true,
+  },
+  {
+    id: "Tencent",
+    label: "Tencent Hy3",
+    gradient: "from-blue-400 to-cyan-500",
+    defaultModel: "hy3",
+    supportsModel: true,
+  },
+  {
+    id: "StepFun",
+    label: "StepFun",
+    gradient: "from-lime-400 to-emerald-600",
+    defaultModel: "step-3.7-flash",
+    supportsModel: true,
+  },
+  {
+    id: "Qwen",
+    label: "Qwen",
+    gradient: "from-violet-400 to-blue-600",
+    defaultModel: "qwen3.7-max",
+    supportsModel: true,
+  },
+  {
+    id: "Mistral",
+    label: "Mistral",
+    gradient: "from-orange-400 to-red-500",
+    defaultModel: "mistral-medium-3-5",
+    supportsModel: true,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
