@@ -61,6 +61,13 @@ export const PROVIDERS = [
     defaultModel: "",
     supportsModel: false,
   },
+  {
+    id: "MiMo",
+    label: "MiMo",
+    gradient: "from-amber-400 to-orange-600",
+    defaultModel: "mimo-v2.5-pro",
+    supportsModel: true,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];

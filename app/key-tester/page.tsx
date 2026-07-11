@@ -249,6 +249,39 @@ function ModelOverrides({
   );
 }
 
+function MiMoSdkExample() {
+  return (
+    <div className="rounded-[2rem] border border-amber-500/20 bg-amber-500/5 p-6 shadow-xl">
+      <p className="font-mono text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">
+        Python SDK test
+      </p>
+      <p className="mt-2 text-xs leading-6 text-muted-foreground">
+        Use `mimo-v2.5-pro` with `MIMO_API_KEY` and `https://api.xiaomimimo.com/v1`.
+      </p>
+      <pre className="mt-4 overflow-auto rounded-2xl border border-white/5 bg-black/30 p-4 font-mono text-[11px] leading-6 text-slate-300 scrollbar-none">
+{`import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ.get("MIMO_API_KEY"),
+    base_url="https://api.xiaomimimo.com/v1",
+)
+
+completion = client.chat.completions.create(
+    model="mimo-v2.5-pro",
+    messages=[
+        {"role": "system", "content": "You are MiMo, an AI assistant developed by Xiaomi."},
+        {"role": "user", "content": "please introduce yourself"},
+    ],
+    max_completion_tokens=1024,
+)
+
+print(completion.model_dump_json())`}
+      </pre>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -628,6 +661,18 @@ export default function KeyTesterPage() {
                       openRouterModelsLoading={openRouterModelsLoading}
                       openRouterModelsError={openRouterModelsError}
                     />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {selectedProvider === "MiMo" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                  >
+                    <MiMoSdkExample />
                   </motion.div>
                 )}
               </AnimatePresence>

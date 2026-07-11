@@ -83,6 +83,13 @@ const SUPPORTED_PROVIDERS: SupportedProvider[] = [
     tone: "from-slate-400 to-slate-600",
   },
   {
+    id: "mimo",
+    label: "MiMo",
+    keywords: ["mimo", "xiaomimimo", "mimo-v2.5", "mimo_api_key", "mimo_key", "mimo_api"],
+    hosts: ["api.xiaomimimo.com"],
+    tone: "from-amber-400 to-orange-600",
+  },
+  {
     id: "zai",
     label: "Z.ai",
     keywords: ["z.ai", "glm", "bigmodel", "z-ai"],
@@ -173,6 +180,28 @@ const CURL_EXAMPLE = `curl --request POST \\
     ],
     "stream": false,
     "temperature": 1
+  }'`;
+
+const MIMO_CURL_EXAMPLE = `curl --request POST \\
+  --url https://api.xiaomimimo.com/v1/chat/completions \\
+  --header 'api-key: <MIMO_API_KEY>' \\
+  --header 'Content-Type: application/json' \\
+  --data '{
+    "model": "mimo-v2.5-pro",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are MiMo, an AI assistant developed by Xiaomi."
+      },
+      {
+        "role": "user",
+        "content": "please introduce yourself"
+      }
+    ],
+    "max_completion_tokens": 1024,
+    "temperature": 1,
+    "top_p": 0.95,
+    "stream": false
   }'`;
 
 function stripShellLineContinuations(input: string) {
@@ -311,6 +340,7 @@ export function CurlPlayground() {
   }, []);
 
   const detectedProvider = useMemo(() => findSupportedProvider(curlInput), [curlInput]);
+  const isMiMoExample = detectedProvider?.id === "mimo";
 
   const isBlockedByRule = useMemo(() => {
     if (blockedRules.length === 0) return null;
@@ -471,6 +501,17 @@ export function CurlPlayground() {
             </span>
           )}
         </div>
+
+        {isMiMoExample && (
+          <div className="mb-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">
+              MiMo SDK example
+            </p>
+            <pre className="overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-6 text-slate-300 scrollbar-none">
+              {MIMO_CURL_EXAMPLE}
+            </pre>
+          </div>
+        )}
 
         <textarea
           value={curlInput}
