@@ -100,7 +100,7 @@ export const PROVIDERS = [
     id: "Mistral",
     label: "Mistral",
     gradient: "from-orange-400 to-red-500",
-    defaultModel: "mistral-medium-3-5",
+    defaultModel: "mistral-large-latest",
     supportsModel: true,
   },
 ] as const;
