@@ -139,6 +139,13 @@ const SUPPORTED_PROVIDERS: SupportedProvider[] = [
     tone: "from-amber-400 to-orange-500",
   },
   {
+    id: "byteplus",
+    label: "BytePlus",
+    keywords: ["byteplus", "modelark", "dola", "seed-2-0", "ark_api_key"],
+    hosts: ["ark.ap-southeast.bytepluses.com", "ark.eu-west.bytepluses.com"],
+    tone: "from-sky-400 to-indigo-600",
+  },
+  {
     id: "cohere",
     label: "Cohere",
     keywords: ["cohere"],

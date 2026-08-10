@@ -103,6 +103,13 @@ export const PROVIDERS = [
     defaultModel: "mistral-large-latest",
     supportsModel: true,
   },
+  {
+    id: "BytePlus",
+    label: "BytePlus",
+    gradient: "from-sky-400 to-indigo-600",
+    defaultModel: "dola-seed-2-1-turbo",
+    supportsModel: true,
+  },
 ] as const;
 
 export type ProviderId = (typeof PROVIDERS)[number]["id"];
