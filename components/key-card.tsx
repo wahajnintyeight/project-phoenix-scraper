@@ -125,6 +125,25 @@ const providerConfig: Record<
   },
 };
 
+function extractReferenceUrl(value?: string) {
+  if (!value) return undefined;
+
+  const markdownMatch = value.match(/^\[[^\]]*\]\((https?:\/\/[^)]+)\)$/);
+  return markdownMatch?.[1] ?? value;
+}
+
+function getReferenceName(ref: Reference, url?: string) {
+  if (ref.repo_name) return ref.repo_name;
+  if (!url) return "Source file";
+
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    return parts[1] || parts.at(-1) || "Source file";
+  } catch {
+    return "Source file";
+  }
+}
+
 export function KeyCard({ keyData, index }: KeyCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -477,19 +496,22 @@ export function KeyCard({ keyData, index }: KeyCardProps) {
                           {repos.map((ref) => (
                             <a
                               key={ref.id}
-                              href={ref.file_url}
+                              href={extractReferenceUrl(ref.file_url) || extractReferenceUrl(ref.repo_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="group flex flex-col gap-1 rounded-xl border border-white/5 bg-white/[0.01] px-4 py-3 hover:bg-white/[0.04] transition-all"
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <span className="text-xs font-medium text-zinc-300 truncate group-hover:text-white">
-                                  {ref.repo_name || ref.repo_url.split('/').pop()}
+                                  {getReferenceName(
+                                    ref,
+                                    extractReferenceUrl(ref.file_url) || extractReferenceUrl(ref.repo_url)
+                                  )}
                                 </span>
                                 <ExternalLink size={14} className="text-zinc-600 group-hover:text-white shrink-0" />
                               </div>
                               <span className="text-[10px] font-mono text-zinc-600 truncate">
-                                {ref.file_path || ref.file_url}
+                                {ref.file_path || extractReferenceUrl(ref.file_url) || extractReferenceUrl(ref.repo_url) || "Source reference"}
                               </span>
                             </a>
                           ))}

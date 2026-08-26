@@ -120,12 +120,12 @@ async function authenticatedFetch<T>(
 export interface Reference {
   id: string;
   api_key_id: string;
-  repo_url: string;
-  repo_owner: string;
-  repo_name: string;
-  file_url: string;
-  file_path: string;
-  found_at: string;
+  repo_url?: string;
+  repo_owner?: string;
+  repo_name?: string;
+  file_url?: string;
+  file_path?: string;
+  found_at?: string;
 }
 
 export interface ApiKey {
